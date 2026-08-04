@@ -196,6 +196,21 @@ tbody tr:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, var
 </style>
 <style>
 /* ---- design v7: premium pass ---- */
+.ktiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px;}
+.kt{background:var(--surface);border:1px solid color-mix(in srgb,var(--border) 70%,transparent);border-radius:13px;padding:10px 14px;box-shadow:var(--shadow);}
+.kt .ktl{display:block;font-size:9px;font-weight:800;color:var(--ink-3);letter-spacing:.06em;margin-bottom:2px;}
+.kt .ktv{font-family:"Inter",var(--mono);font-size:22px;font-weight:800;letter-spacing:-.02em;}
+.fband{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid color-mix(in srgb,var(--border) 70%,transparent);border-left:4px solid #7c5cf0;border-radius:13px;padding:12px 16px;margin-bottom:12px;font-size:12.5px;line-height:1.8;}
+.fband .fbl{flex:none;font-size:9px;font-weight:800;letter-spacing:.12em;color:#7c5cf0;padding-top:3px;}
+.hb{display:grid;grid-template-columns:120px 1fr 56px 74px;gap:12px;align-items:center;padding:7px 0;}
+.hb .hl{font-size:12.5px;font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hb .htrack{height:14px;border-radius:7px;background:var(--surface-3);overflow:hidden;
+  background-image:linear-gradient(90deg,transparent calc(60% - 1px),var(--border-strong) calc(60% - 1px),var(--border-strong) 60%,transparent 60%);}
+.hb .htrack i{display:block;height:100%;border-radius:7px;}
+.hb .hv{font-family:"Inter",var(--mono);font-size:13px;font-weight:800;text-align:right;}
+.hb .hv2{font-size:10.5px;color:var(--ink-3);font-family:"Inter",var(--mono);text-align:right;}
+.repta{width:100%;min-height:300px;border:1px solid var(--border-strong);border-radius:11px;padding:14px;
+  font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--ink);background:var(--surface-2);resize:vertical;box-sizing:border-box;}
 .ltile{display:inline-flex;align-items:center;justify-content:center;border-radius:9px;overflow:hidden;flex:none;border:1px solid color-mix(in srgb,var(--border) 65%,transparent);}
 .ltile img{width:100%;height:100%;display:block;}
 .ltile.fcontain img{object-fit:contain;padding:4px;box-sizing:border-box;}
@@ -295,6 +310,7 @@ function logoTile(name,h,seg,w){
 }
 B.sched.forEach(function(c){ if(!c.seg) c.seg = SCHOOL_SET[c.name]?'school':'talent'; });
 var curTab='schools', schedMode='cal', curCase='ALL', kpiSeg='all', curSchool=null;
+var kpiView='card', kpiFilter='', kpiSort='asc';
 var calCur=null;
 var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3'};
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -509,16 +525,125 @@ function kpiCardHtml(c){
     '<span class="kovwrap"><span class="kovlbl">現時点達成率</span><span class="kov c-'+ost+'">'+(avg===null?'—':avg+'%')+'</span></span></div>'+
     '<div class="ovbar"><i class="b-'+ost+'" style="width:'+(avg===null?0:Math.min(avg,100))+'%"></i></div>'+rows+'</div>';
 }
+function caseStat(c){
+  var pace=schoolAch(c), month=schoolMonthAch(c);
+  return { pace:pace, month:month, st: pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad' };
+}
+function worstKpi(c){
+  var w=null, wr=1e9;
+  c.kpis.forEach(function(k){ var t=numv(k[1]),pace=numv(k[2]),a=numv(k[3]);
+    if(t&&pace&&a!==null){ var r=a/pace; if(r<wr){ wr=r; w=k[0]; } } });
+  return w;
+}
+function stLabel(st){ return st==='good'?'順調':st==='warn'?'注意':st==='bad'?'要対応':'未計測'; }
+function sortedCases(all){
+  var cs=all.filter(function(c){ return !kpiFilter || c._s.st===kpiFilter; }).slice();
+  cs.sort(function(a,b){
+    if(kpiSort==='name') return a.name<b.name?-1:1;
+    var pa=a._s.pace===null?1e9:a._s.pace, pb=b._s.pace===null?1e9:b._s.pace;
+    return kpiSort==='desc' ? (pb===1e9?-1e9:pb)-(pa===1e9?-1e9:pa) : pa-pb;
+  });
+  return cs;
+}
+function graphHtml(cases){
+  var rows=cases.map(function(c){
+    var p=c._s.pace;
+    return '<div class="hb"><span class="hl">'+esc(c.name)+'</span>'+
+      '<span class="htrack"><i class="b-'+c._s.st+'" style="width:'+(p===null?0:Math.min(p,100))+'%"></i></span>'+
+      '<span class="hv c-'+c._s.st+'">'+(p===null?'—':p+'%')+'</span>'+
+      '<span class="hv2">月間 '+(c._s.month===null?'—':c._s.month+'%')+'</span></div>';
+  }).join('');
+  return '<div class="panel" style="padding:18px 20px"><div class="grp-h2" style="padding:0 0 10px">案件別 現時点達成率（バー=100%上限で表示）</div>'+rows+'</div>';
+}
+function tableHtml(cases){
+  var rows='';
+  cases.forEach(function(c){
+    c.kpis.forEach(function(k){
+      var t=numv(k[1]),pace=numv(k[2]),a=numv(k[3]);
+      var st=kst(t,pace,a);
+      var pct=(pace&&a!==null)?Math.round(a/pace*100)+'%':'—';
+      var mon=(t&&a!==null)?Math.round(a/t*100)+'%':'—';
+      var isCv=/LINE|面談/.test(k[0]);
+      rows+='<tr><td>'+esc(c.name)+'</td><td class="wr" style="font-weight:600">'+(isCv?'<span class="cvmark">CV</span>':'')+esc(k[0])+'</td>'+
+        '<td class="num" style="text-align:right"><b>'+(a===null?'—':a.toLocaleString())+'</b></td>'+
+        '<td class="num" style="text-align:right;color:var(--ink-3)">'+(t===null?'—':t.toLocaleString())+'</td>'+
+        '<td class="num c-'+st+'" style="text-align:right;font-weight:800">'+pct+'</td>'+
+        '<td class="num" style="text-align:right;color:var(--ink-2)">'+mon+'</td></tr>';
+    });
+  });
+  return '<div class="panel"><div class="tbl-scroll"><table><thead><tr><th>案件</th><th>KPI</th><th style="text-align:right">実績</th><th style="text-align:right">月間目標</th><th style="text-align:right">現時点達成率</th><th style="text-align:right">月間達成率</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+function reportText(all){
+  var L=[];
+  L.push('■ WEIN スクール横串オーガニック KPI報告（'+B.kpiBasis+'）');
+  L.push('');
+  ['bad','warn','good','none'].forEach(function(st){
+    var cs=all.filter(function(c){ return c._s.st===st; });
+    if(!cs.length) return;
+    L.push('【'+stLabel(st)+'】');
+    cs.forEach(function(c){
+      var line='・'+c.name+'：現時点 '+(c._s.pace===null?'—':c._s.pace+'%')+' ／ 月間 '+(c._s.month===null?'—':c._s.month+'%');
+      if(st==='bad'||st==='warn'){ var w=worstKpi(c); if(w) line+='（最遅れ: '+w+'）'; }
+      L.push(line);
+    });
+    L.push('');
+  });
+  L.push('ボード: https://tinyurl.com/wein-sns-board');
+  return L.join('\n');
+}
+function copyReport(){
+  var ta=$('repTa'); ta.select();
+  var done=function(){ var b=$('repCopy'); b.textContent='コピーしました'; setTimeout(function(){ b.textContent='テキストをコピー'; },1600); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(done); }
+  else { document.execCommand('copy'); done(); }
+}
+function reportHtml(all){
+  return '<div class="panel" style="padding:16px 18px"><div class="grp-h2" style="padding:0 0 8px">定例報告フォーマット（そのままコピーしてチャットに貼れます）</div>'+
+    '<textarea id="repTa" class="repta" readonly>'+esc(reportText(all))+'</textarea>'+
+    '<div style="margin-top:10px"><button class="btn" id="repCopy" type="button" onclick="copyReport()">テキストをコピー</button></div></div>';
+}
 function renderKpi(){
   var seg='<span class="switch">'+[['all','すべて'],['school','スクール'],['talent','タレント']].map(function(x){
     return '<button type="button" class="'+(kpiSeg===x[0]?'on':'')+'" onclick="kpiSeg=\''+x[0]+'\';renderKpi()">'+x[1]+'</button>';}).join('')+'</span>';
-  var cases=B.kpi.filter(function(c){return kpiSeg==='all'||c.seg===kpiSeg;});
-  var cards=cases.map(kpiCardHtml).join('');
-  $('view').innerHTML='<div class="panel" style="margin-bottom:14px"><div class="bar">'+seg+
-    '<span class="lgd"><span class="lgi"><i class="ld b-good"></i>順調 100%〜</span><span class="lgi"><i class="ld b-warn"></i>注意 60%〜</span><span class="lgi"><i class="ld b-bad"></i>要対応 〜60%</span></span>'+
-    '<span class="spacer"></span><span class="note" style="margin:0">'+esc(B.kpiBasis)+'</span></div></div>'+
-    '<div class="kgrid">'+cards+'</div>'+
-    '<p class="note"><b>%＝現時点達成率</b>（現在実績 ÷ 今日までのペース目標）。<span class="c-good" style="font-weight:800">100%以上＝順調</span>／<span class="c-warn" style="font-weight:800">60%以上＝注意</span>／<span class="c-bad" style="font-weight:800">60%未満＝要対応</span>。「/月間」＝月間目標。<span class="cvmark">CV</span>＝コンバージョン（LINE登録・面談予約）。カード右上＝各KPIの現時点達成率の平均です。</p>';
+  var view='<span class="switch">'+[['card','カード'],['graph','グラフ'],['table','テーブル'],['report','報告']].map(function(x){
+    return '<button type="button" class="'+(kpiView===x[0]?'on':'')+'" onclick="kpiView=\''+x[0]+'\';renderKpi()">'+x[1]+'</button>';}).join('')+'</span>';
+  var all=B.kpi.filter(function(c){ return kpiSeg==='all'||c.seg===kpiSeg; });
+  all.forEach(function(c){ c._s=caseStat(c); });
+  var cnt={good:0,warn:0,bad:0,none:0}; var ps=[];
+  all.forEach(function(c){ cnt[c._s.st]++; if(c._s.pace!==null) ps.push(c._s.pace); });
+  var avg=ps.length?Math.round(ps.reduce(function(x,y){return x+y;},0)/ps.length):null;
+  var tiles='<div class="ktiles">'+
+    '<div class="kt"><span class="ktl">案件数</span><span class="ktv">'+all.length+'</span></div>'+
+    '<div class="kt good"><span class="ktl">順調</span><span class="ktv c-good">'+cnt.good+'</span></div>'+
+    '<div class="kt warn"><span class="ktl">注意</span><span class="ktv c-warn">'+cnt.warn+'</span></div>'+
+    '<div class="kt bad"><span class="ktl">要対応</span><span class="ktv c-bad">'+cnt.bad+'</span></div>'+
+    '<div class="kt"><span class="ktl">未計測</span><span class="ktv" style="color:var(--ink-3)">'+cnt.none+'</span></div>'+
+    '<div class="kt"><span class="ktl">全体平均（現時点）</span><span class="ktv '+(avg===null?'':avg>=100?'c-good':avg>=60?'c-warn':'c-bad')+'">'+(avg===null?'—':avg+'%')+'</span></div></div>';
+  var bads=all.filter(function(c){ return c._s.st==='bad'; });
+  var goods=all.filter(function(c){ return c._s.st==='good'; });
+  var focus='';
+  if(bads.length||goods.length){
+    focus='<div class="fband"><span class="fbl">FOCUS</span><span class="fbt">'+
+      (bads.length?'<b class="c-bad">要対応：</b>'+bads.map(function(c){ var w=worstKpi(c); return esc(c.name)+'（'+c._s.pace+'%'+(w?'・最遅れ: '+esc(w):'')+'）'; }).join('、')+'。':'')+
+      (goods.length?' <b class="c-good">好調：</b>'+goods.map(function(c){ return esc(c.name)+'（'+c._s.pace+'%）'; }).join('、')+'。':'')+'</span></div>';
+  }
+  var chips='<span class="switch">'+[['','すべて'],['good','順調'],['warn','注意'],['bad','要対応'],['none','未計測']].map(function(x){
+    return '<button type="button" class="'+(kpiFilter===x[0]?'on':'')+'" onclick="kpiFilter=\''+x[0]+'\';renderKpi()">'+(x[0]?'<i class="ld b-'+x[0]+'" style="width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:4px"></i>':'')+x[1]+'</button>';}).join('')+'</span>';
+  var sort='<span class="switch">'+[['asc','低い順'],['desc','高い順'],['name','名前順']].map(function(x){
+    return '<button type="button" class="'+(kpiSort===x[0]?'on':'')+'" onclick="kpiSort=\''+x[0]+'\';renderKpi()">'+x[1]+'</button>';}).join('')+'</span>';
+  var cases=sortedCases(all);
+  var body;
+  if(kpiView==='graph') body=graphHtml(cases);
+  else if(kpiView==='table') body=tableHtml(cases);
+  else if(kpiView==='report') body=reportHtml(all);
+  else body='<div class="kgrid">'+cases.map(kpiCardHtml).join('')+'</div>';
+  $('view').innerHTML=tiles+focus+
+    '<div class="panel" style="margin-bottom:14px"><div class="bar">'+seg+view+
+    '<span class="spacer"></span><span class="note" style="margin:0">'+esc(B.kpiBasis)+'</span></div>'+
+    (kpiView!=='report'?'<div class="bar" style="padding-top:8px;padding-bottom:8px">'+chips+sort+
+    '<span class="lgd" style="margin-left:auto"><span class="lgi"><i class="ld b-good"></i>順調 100%〜</span><span class="lgi"><i class="ld b-warn"></i>注意 60%〜</span><span class="lgi"><i class="ld b-bad"></i>要対応 〜60%</span></span></div>':'')+'</div>'+
+    body+
+    '<p class="note"><b>%＝現時点達成率</b>（現在実績 ÷ 今日までのペース目標）。「/月間」＝月間目標。<span class="cvmark">CV</span>＝コンバージョン（LINE登録・面談予約）。</p>';
 }
 render();
 </script>
