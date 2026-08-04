@@ -63,6 +63,10 @@
   @media (prefers-color-scheme:dark){ .mb-x{background:#e8e8e8;color:#111;} }
   .mb-yt{background:#FDE3E1;color:#B3211B;} .mb-sh{background:#FCE7F3;color:#BE185D;}
   .sctag{display:inline-block;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap;vertical-align:1px;}
+  .sctag.tl{background:#F3E8FF;color:#7E22CE;}
+  @media (prefers-color-scheme:dark){ .sctag.tl{background:#2d1b45;color:#d0aaff;} }
+  .segrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;}
+  .seglbl{font-size:9.5px;font-weight:800;color:var(--ink-3);letter-spacing:.08em;min-width:64px;}
 
   /* calendar */
   .calhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
@@ -71,12 +75,11 @@
   .cal{min-width:880px;display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);}
   .cal .ch{background:var(--surface-2);font-size:10px;font-weight:800;color:var(--ink-3);text-align:center;padding:6px 0;}
   .cal .ch.sun{color:var(--bad-ink)} .cal .ch.sat{color:var(--accent-ink)}
-  .cday{background:var(--surface);min-height:106px;padding:5px 6px;font-size:10.5px;}
+  .cday{background:var(--surface);min-height:112px;padding:5px 6px;font-size:11px;}
   .cday.out{background:var(--surface-2);}
   .cday .dnum{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--ink-3);display:inline-flex;width:19px;height:19px;align-items:center;justify-content:center;border-radius:50%;}
   .cday.today .dnum{background:var(--accent);color:#fff;}
-  .cent{display:flex;gap:4px;align-items:flex-start;margin-top:4px;line-height:1.4;}
-  .cent .cdot{flex:none;width:8px;height:8px;border-radius:2.5px;margin-top:3px;border:1px solid rgba(0,0,0,.12);}
+  .cent{display:block;margin-top:4px;line-height:1.45;background:var(--surface-2);border-left:3px solid var(--border-strong);border-radius:5px;padding:3px 6px;}
   .cent .ct{color:var(--ink);font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
   .cent .ct b{color:var(--ink);}
 
@@ -116,7 +119,11 @@
   .scard:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-lg);}
   .scard .sn2{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;letter-spacing:-.01em;}
   .scard .sn2 .kov{margin-left:auto;font-size:16px;}
-  .scard .steaser{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .scard .steaser{font-size:10.5px;color:var(--ink-3);margin-top:9px;line-height:1.6;}
+  .statrow{display:flex;gap:10px;margin-top:10px;}
+  .stat{flex:1;background:var(--surface-2);border-radius:9px;padding:7px 11px;}
+  .stat .sl{display:block;font-size:8.5px;font-weight:800;color:var(--ink-3);letter-spacing:.04em;margin-bottom:1px;}
+  .stat .sv{font-family:var(--mono);font-size:17px;font-weight:750;letter-spacing:-.02em;}
   .sd-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
   .sd-head h2{font-size:21px;font-weight:800;margin:0;letter-spacing:-.01em;}
   .concept-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
@@ -168,11 +175,14 @@ function mediaBadge(m){
   return m?'<span class="mb">'+esc(m)+'</span>':'';}
 function pd(s){var m=/^(\d{1,2})\/(\d{1,2})/.exec(String(s||'').trim());if(!m)return null;return new Date(B.year,+m[1]-1,+m[2]);}
 
+function isAgg(){ return curCase==='ALL'||curCase==='SCHOOL'||curCase==='TALENT'; }
 function allRows(){
   var out=[];
   B.sched.forEach(function(c){
-    if(curCase!=='ALL' && c.name!==curCase) return;
-    c.rows.forEach(function(r){ out.push({sc:c.name,date:r[0],time:r[1],title:r[2],media:r[3],status:r[4],editor:r[5]}); });
+    if(curCase==='SCHOOL' && c.seg!=='school') return;
+    if(curCase==='TALENT' && c.seg!=='talent') return;
+    if(!isAgg() && c.name!==curCase) return;
+    c.rows.forEach(function(r){ out.push({sc:c.name,seg:c.seg,date:r[0],time:r[1],title:r[2],media:r[3],status:r[4],editor:r[5]}); });
   });
   return out;
 }
@@ -194,26 +204,40 @@ function schoolAch(kc){ if(!kc) return null; var pr=[];
 function openSchoolIdx(i){ curSchool=B.sched[i].name; curTab='schools'; render(); }
 function openCal(i){ curCase=B.sched[i].name; curTab='sched'; schedMode='cal'; curSchool=null; render(); }
 function sh3(t){ return '<div class="sec-h3"><h3>'+t+'</h3><span class="line"></span></div>'; }
+function schoolMonthAch(kc){ if(!kc) return null; var ar=[];
+  kc.kpis.forEach(function(k){ var t=numv(k[1]),a=numv(k[3]); if(t&&a!==null) ar.push(Math.min(a/t,1)); });
+  return ar.length?Math.round(ar.reduce(function(x,y){return x+y;},0)/ar.length*100):null; }
 function renderSchools(){
   if(curSchool) return renderSchoolDetail();
   var t0=new Date(); t0.setHours(0,0,0,0);
-  var cards=B.sched.map(function(c,i){
-    var ach=schoolAch(schoolKpi(c.name));
+  function card(c,i){
+    var kc=schoolKpi(c.name);
+    var pace=schoolAch(kc), month=schoolMonthAch(kc);
+    var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
     var up=c.rows.filter(function(r){ var d=pd(r[0]); return d&&d>=t0; }).length;
-    var ost=ach===null?'none':ach>=100?'good':ach>=60?'warn':'bad';
     return '<div class="scard" onclick="openSchoolIdx('+i+')"><div class="sn2">'+esc(c.name)+
-      (ach!==null?'<span class="kovwrap"><span class="kovlbl">現時点達成率</span><span class="kov c-'+ost+'" style="font-size:17px">'+ach+'%</span></span>':'')+'</div>'+
-      '<div class="steaser">今後の予定 '+up+'件 ／ タップでコンセプト・KPI・スケジュールを表示</div></div>';
-  }).join('');
-  $('view').innerHTML='<div class="sgrid">'+cards+'</div>'+
-    '<p class="note">スクール5校はコンセプト設計付き。タレント案件はKPI・スケジュールのみです。</p>';
+      '<span class="sctag'+(c.seg==='talent'?' tl':'')+'" style="margin-left:auto">'+(c.seg==='talent'?'非スクール':'スクール')+'</span></div>'+
+      '<div class="statrow">'+
+      '<span class="stat"><span class="sl">現時点達成率</span><span class="sv c-'+pst+'">'+(pace===null?'—':pace+'%')+'</span></span>'+
+      '<span class="stat"><span class="sl">月間達成率</span><span class="sv" style="color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span></div>'+
+      '<div class="steaser">今後の予定 '+up+'件 ／ タップで詳細</div></div>';
+  }
+  var sHtml='', tHtml='';
+  B.sched.forEach(function(c,i){ if(c.seg==='school') sHtml+=card(c,i); else tHtml+=card(c,i); });
+  $('view').innerHTML=sh3('🏫 スクール')+'<div class="sgrid">'+sHtml+'</div>'+
+    sh3('🎤 非スクール（タレント・案件）')+'<div class="sgrid">'+tHtml+'</div>'+
+    '<p class="note"><b>現時点達成率</b>＝現在実績÷今日までのペース目標／<b>月間達成率</b>＝現在実績÷月間目標（いずれも各KPIの平均）。スクール5校はコンセプト設計付き。</p>';
 }
 function renderSchoolDetail(){
   var name=curSchool, sc=null, idx=0;
   B.sched.forEach(function(c,i){ if(c.name===name){ sc=c; idx=i; } });
   if(!sc){ curSchool=null; return renderSchools(); }
   var kc=schoolKpi(name), con=(B.concepts||{})[name]||[];
+  var pace=schoolAch(kc), month=schoolMonthAch(kc);
+  var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
   var head='<div class="sd-head"><button class="btn" type="button" onclick="curSchool=null;render()">← 一覧</button><h2>'+esc(name)+'</h2>'+
+    '<span class="kovwrap" style="text-align:left"><span class="kovlbl">現時点達成率</span><span class="kov c-'+pst+'" style="font-size:19px">'+(pace===null?'—':pace+'%')+'</span></span>'+
+    '<span class="kovwrap" style="text-align:left"><span class="kovlbl">月間達成率</span><span class="kov" style="font-size:19px;color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span>'+
     '<span class="spacer"></span><button class="btn" type="button" onclick="openCal('+idx+')">📅 カレンダーで見る</button></div>';
   var conceptHtml=con.length
     ? '<div class="concept-g">'+con.map(function(c,i){
@@ -241,19 +265,27 @@ function renderSchoolDetail(){
     sh3('📅 今後の投稿スケジュール — 期日が近い順')+schedHtml;
 }
 
-function setCase(i){ curCase = i==='ALL'?'ALL':B.sched[i].name; renderSched(); }
+function setCase(i){ curCase = (i==='ALL'||i==='SCHOOL'||i==='TALENT')?i:B.sched[i].name; renderSched(); }
 function calShift(n){ calCur.m+=n; if(calCur.m<0){calCur.m=11;calCur.y--;} if(calCur.m>11){calCur.m=0;calCur.y++;} renderSched(); }
 function calToday(){ var t=new Date(); calCur={y:t.getFullYear(),m:t.getMonth()}; renderSched(); }
 
 function renderSched(){
   if(!calCur){ var t=new Date(); calCur={y:B.year,m:t.getMonth()}; }
-  var seg='<span class="switch"><button type="button" class="'+(curCase==='ALL'?'on':'')+'" onclick="setCase(\'ALL\')">🌏 すべて</button>'+
-    B.sched.map(function(c,i){return '<button type="button" class="'+(curCase===c.name?'on':'')+'" onclick="setCase('+i+')">'+esc(c.name)+'</button>';}).join('')+'</span>';
+  function segBtns(seg){
+    return B.sched.map(function(c,i){ if(c.seg!==seg) return '';
+      return '<button type="button" class="'+(curCase===c.name?'on':'')+'" onclick="setCase('+i+')">'+esc(c.name)+'</button>'; }).join('');
+  }
+  var segAll='<span class="switch">'+
+    '<button type="button" class="'+(curCase==='ALL'?'on':'')+'" onclick="setCase(\'ALL\')">🌏 すべて</button>'+
+    '<button type="button" class="'+(curCase==='SCHOOL'?'on':'')+'" onclick="setCase(\'SCHOOL\')">🏫 スクール全体</button>'+
+    '<button type="button" class="'+(curCase==='TALENT'?'on':'')+'" onclick="setCase(\'TALENT\')">🎤 非スクール全体</button></span>';
   var mode='<span class="switch"><button type="button" class="'+(schedMode==='cal'?'on':'')+'" onclick="schedMode=\'cal\';renderSched()">📅 カレンダー</button>'+
     '<button type="button" class="'+(schedMode==='list'?'on':'')+'" onclick="schedMode=\'list\';renderSched()">☰ リスト</button></span>';
   var rows=allRows();
   var body = schedMode==='cal' ? calHtml(rows) : listHtml(rows);
-  $('view').innerHTML='<div class="panel"><div class="bar">'+seg+mode+'</div>'+body+'</div>'+
+  $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+'</div>'+
+    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">🏫 スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
+    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">🎤 非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+body+'</div>'+
     '<p class="note">色＝制作状況（<span class="stag" style="background:#DDEBF7">企画/台本</span> <span class="stag" style="background:#FCE5CD">撮影</span> <span class="stag" style="background:#FFF2CC">編集</span> <span class="stag" style="background:#F4CCCC">修正中</span> <span class="stag" style="background:#D9D2E9">社内確認中</span> <span class="stag" style="background:#CFE2F3">納品</span> <span class="stag" style="background:#D9D9D9;color:#606060">投稿済</span>）</p>';
 }
 
@@ -268,9 +300,9 @@ function calHtml(rows){
   for(var d=1;d<=days;d++){
     var ents=(byDay[d]||[]).map(function(r){
       var c=STATUS_COLORS[r.status]||'#c5ccd7';
-      return '<div class="cent" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
-        '<span class="cdot" style="background:'+c+'"></span><span class="ct">'+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
-        (curCase==='ALL'?'<span class="sctag">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+'</span></div>';
+      return '<div class="cent" style="border-left-color:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
+        '<span class="ct">'+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
+        (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+'</span></div>';
     }).join('');
     cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+'"><span class="dnum">'+d+'</span>'+ents+'</div>';
   }
@@ -291,11 +323,11 @@ function listHtml(rows){
   function tr(r){var d=r._d;
     var ds=d?(d.getMonth()+1)+'/'+d.getDate()+'（'+'日月火水木金土'.charAt(d.getDay())+'）':'—';
     return '<tr><td class="num">'+ds+(r.time?' '+esc(r.time):'')+'</td>'+
-      (curCase==='ALL'?'<td><span class="sctag">'+esc(r.sc)+'</span></td>':'')+
+      (isAgg()?'<td><span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span></td>':'')+
       '<td class="wr">'+esc(r.title)+'</td><td>'+mediaBadge(r.media)+'</td><td>'+stag(r.status)+'</td><td>'+esc(r.editor||'')+'</td></tr>';}
   function sec(title,arr){if(!arr.length)return '';
     return '<div class="grp-h2">'+title+'</div><div class="tbl-scroll"><table><thead><tr><th>投稿日</th>'+
-      (curCase==='ALL'?'<th>案件</th>':'')+'<th>コンテンツ</th><th>媒体</th><th>状況</th><th>担当</th></tr></thead><tbody>'+arr.map(tr).join('')+'</tbody></table></div>';}
+      (isAgg()?'<th>案件</th>':'')+'<th>コンテンツ</th><th>媒体</th><th>状況</th><th>担当</th></tr></thead><tbody>'+arr.map(tr).join('')+'</tbody></table></div>';}
   return sec('📌 今後の予定 — 期日が近い順（'+up.length+'件）',up)+
     sec('🎬 日付未定・制作中（'+undated.length+'件）',undated)+
     sec('✅ 直近の投稿済み — 新しい順（'+past.length+'件）',past);
