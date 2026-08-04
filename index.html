@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>WEIN SNS BOARD｜スケジュール & KPI</title>
+<style>
+  :root{
+    --bg:#eef1f5; --surface:#ffffff; --surface-2:#f4f6f9; --surface-3:#e7ebf1;
+    --border:#dee3ea; --border-strong:#c5ccd7;
+    --ink:#181b21; --ink-2:#565e6c; --ink-3:#8b93a2;
+    --accent:#4a57c9; --accent-soft:#e9ebfb; --accent-ink:#3742a1;
+    --good:#1a9d5b; --good-soft:#e3f4eb; --good-ink:#127a45;
+    --warn:#d67d12; --warn-soft:#fbeed8; --warn-ink:#985807;
+    --bad:#dd3b3b; --bad-soft:#fbe7e7; --bad-ink:#b32424;
+    --shadow:0 1px 2px rgba(20,24,33,.05); --shadow-lg:0 12px 34px rgba(20,24,33,.14);
+    --mono:"SF Mono",ui-monospace,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,"Noto Sans JP",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0f1216; --surface:#171b21; --surface-2:#1e232b; --surface-3:#272d38;
+      --border:#2b323d; --border-strong:#3c4450;
+      --ink:#eef1f6; --ink-2:#a3abb9; --ink-3:#69717f;
+      --accent:#8b9bff; --accent-soft:#1e2842; --accent-ink:#b6c2ff;
+      --good:#3ed07e; --good-soft:#132a1e; --good-ink:#5fe19b;
+      --warn:#f0a83a; --warn-soft:#30250f; --warn-ink:#f7c574;
+      --bad:#f26a6a; --bad-soft:#331717; --bad-ink:#f79290;
+      --shadow:0 1px 2px rgba(0,0,0,.45); --shadow-lg:0 12px 40px rgba(0,0,0,.6);
+    }
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;
+    -webkit-font-smoothing:antialiased;font-feature-settings:"palt" 1;font-size:14px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 90px;}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  button{font-family:var(--sans);cursor:pointer;}
+
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+  .badge{background:var(--ink);color:var(--surface);font-size:10px;font-weight:800;letter-spacing:.13em;padding:3px 8px;border-radius:6px;}
+  h1{font-size:17px;font-weight:800;margin:0;letter-spacing:-.01em;}
+  .sub{font-size:10.5px;color:var(--ink-3);}
+  .spacer{flex:1;}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:7px;white-space:nowrap;}
+  .pill .d{width:6px;height:6px;border-radius:50%;}
+  .p-done{background:var(--good-soft);color:var(--good-ink)} .p-done .d{background:var(--good)}
+
+  .tabs{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:3px;gap:2px;margin-bottom:16px;flex-wrap:wrap;}
+  .tabs button{border:none;background:transparent;color:var(--ink-2);font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:8px;}
+  .tabs button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .switch{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:2px;gap:2px;flex-wrap:wrap;}
+  .switch button{border:none;background:transparent;font-size:11px;font-weight:700;color:var(--ink-3);padding:4px 11px;border-radius:7px;white-space:nowrap;}
+  .switch button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);}
+  .btn{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink-2);font-size:12px;font-weight:700;padding:6px 12px;border-radius:9px;}
+
+  .stag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 10px;border-radius:6px;color:#3d3d3d;border:1px solid rgba(0,0,0,.1);}
+  .mb{display:inline-block;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:var(--surface-3);color:var(--ink-2);letter-spacing:.03em;vertical-align:1px;white-space:nowrap;}
+  .mb-x{background:#1a1a1a;color:#fff;}
+  @media (prefers-color-scheme:dark){ .mb-x{background:#e8e8e8;color:#111;} }
+  .mb-yt{background:#FDE3E1;color:#B3211B;} .mb-sh{background:#FCE7F3;color:#BE185D;}
+  .sctag{display:inline-block;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap;vertical-align:1px;}
+
+  /* calendar */
+  .calhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .calhead .cm{font-size:14.5px;font-weight:800;min-width:110px;text-align:center;}
+  .calwrap{overflow-x:auto;}
+  .cal{min-width:880px;display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);}
+  .cal .ch{background:var(--surface-2);font-size:10px;font-weight:800;color:var(--ink-3);text-align:center;padding:6px 0;}
+  .cal .ch.sun{color:var(--bad-ink)} .cal .ch.sat{color:var(--accent-ink)}
+  .cday{background:var(--surface);min-height:106px;padding:5px 6px;font-size:10.5px;}
+  .cday.out{background:var(--surface-2);}
+  .cday .dnum{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--ink-3);display:inline-flex;width:19px;height:19px;align-items:center;justify-content:center;border-radius:50%;}
+  .cday.today .dnum{background:var(--accent);color:#fff;}
+  .cent{display:flex;gap:4px;align-items:flex-start;margin-top:4px;line-height:1.4;}
+  .cent .cdot{flex:none;width:8px;height:8px;border-radius:2.5px;margin-top:3px;border:1px solid rgba(0,0,0,.12);}
+  .cent .ct{color:var(--ink);font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .cent .ct b{color:var(--ink);}
+
+  /* list */
+  .grp-h2{font-size:11px;font-weight:800;color:var(--ink-3);letter-spacing:.05em;padding:14px 18px 6px;}
+  .tbl-scroll{overflow-x:auto;}
+  table{border-collapse:collapse;width:100%;font-size:12px;}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:top;}
+  th{font-size:9.5px;color:var(--ink-3);font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--surface-2);}
+  tr:last-child td{border-bottom:none;}
+  td.wr{white-space:normal;min-width:200px;max-width:360px;line-height:1.5;color:var(--ink);font-weight:600;}
+
+  /* KPI */
+  .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;}
+  .kcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 17px;}
+  .kcard .kh2{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .kcard .knm{font-size:15px;font-weight:800;letter-spacing:-.01em;}
+  .kcard .kov{margin-left:auto;font-family:var(--mono);font-size:21px;font-weight:750;letter-spacing:-.02em;}
+  .krow2{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;}
+  .krow2:last-child{border-bottom:none;}
+  .krow2 .kn2{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);}
+  .krow2 .kn2.cv{color:var(--accent-ink);font-weight:800;}
+  .krow2 .kv2{font-family:var(--mono);font-size:11px;color:var(--ink);white-space:nowrap;}
+  .krow2 .kv2 b{font-size:12px;}
+  .kbar{width:52px;height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden;flex:none;}
+  .kbar i{display:block;height:100%;border-radius:3px;}
+  .b-good{background:var(--good)} .b-warn{background:var(--warn)} .b-bad{background:var(--bad)} .b-none{background:var(--ink-3)}
+  .krow2 .kp2{font-family:var(--mono);font-size:10.5px;font-weight:800;min-width:46px;text-align:right;flex:none;}
+  .c-good{color:var(--good-ink)} .c-warn{color:var(--warn-ink)} .c-bad{color:var(--bad-ink)} .c-none{color:var(--ink-3)}
+  .note{font-size:11px;color:var(--ink-3);margin:10px 2px;line-height:1.7;}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);font-size:10.5px;color:var(--ink-3);line-height:1.8;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">WEIN</span>
+    <div><h1>SNS BOARD｜スケジュール & KPI</h1><div class="sub" id="subline"></div></div>
+    <div class="spacer"></div>
+    <span class="pill p-done"><span class="d"></span>閲覧用ボード</span>
+  </header>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+  <footer>
+    WEIN SNS BOARD ─ オーガニックSNSの投稿スケジュールとKPI進捗の共有ボード（閲覧専用）。<br>
+    データはWEIN_SNS運用スケジュール／KPI横断まとめのスナップショットです。スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
+  </footer>
+</div>
+<script src="data.js"></script>
+<script>
+var B = window.BOARD;
+var curTab='sched', schedMode='cal', curCase='ALL', kpiSeg='all';
+var calCur=null;
+var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3'};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function $(id){return document.getElementById(id);}
+function stag(st,extra){var c=STATUS_COLORS[st]||'#ECEFF3';var fg=st==='投稿済'?'#606060':'#3d3d3d';
+  return '<span class="stag" style="background:'+c+';color:'+fg+'">'+esc(st||'予定')+(extra||'')+'</span>';}
+function mediaBadge(m){
+  if(m==='X投稿')return '<span class="mb mb-x">X</span>';
+  if(m==='ロング動画')return '<span class="mb mb-yt">ロング</span>';
+  if(m==='ショート動画')return '<span class="mb mb-sh">ショート</span>';
+  return m?'<span class="mb">'+esc(m)+'</span>':'';}
+function pd(s){var m=/^(\d{1,2})\/(\d{1,2})/.exec(String(s||'').trim());if(!m)return null;return new Date(B.year,+m[1]-1,+m[2]);}
+
+function allRows(){
+  var out=[];
+  B.sched.forEach(function(c){
+    if(curCase!=='ALL' && c.name!==curCase) return;
+    c.rows.forEach(function(r){ out.push({sc:c.name,date:r[0],time:r[1],title:r[2],media:r[3],status:r[4],editor:r[5]}); });
+  });
+  return out;
+}
+
+function render(){
+  $('subline').textContent = B.updated+' 時点のスナップショット';
+  var tabs=[{k:'sched',l:'📅 スケジュール'},{k:'kpi',l:'📊 KPI進捗'}];
+  $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="'+(curTab===t.k?'on':'')+'" onclick="curTab=\''+t.k+'\';render()">'+t.l+'</button>';}).join('');
+  if(curTab==='sched') renderSched(); else renderKpi();
+}
+
+function setCase(i){ curCase = i==='ALL'?'ALL':B.sched[i].name; renderSched(); }
+function calShift(n){ calCur.m+=n; if(calCur.m<0){calCur.m=11;calCur.y--;} if(calCur.m>11){calCur.m=0;calCur.y++;} renderSched(); }
+function calToday(){ var t=new Date(); calCur={y:t.getFullYear(),m:t.getMonth()}; renderSched(); }
+
+function renderSched(){
+  if(!calCur){ var t=new Date(); calCur={y:B.year,m:t.getMonth()}; }
+  var seg='<span class="switch"><button type="button" class="'+(curCase==='ALL'?'on':'')+'" onclick="setCase(\'ALL\')">🌏 すべて</button>'+
+    B.sched.map(function(c,i){return '<button type="button" class="'+(curCase===c.name?'on':'')+'" onclick="setCase('+i+')">'+esc(c.name)+'</button>';}).join('')+'</span>';
+  var mode='<span class="switch"><button type="button" class="'+(schedMode==='cal'?'on':'')+'" onclick="schedMode=\'cal\';renderSched()">📅 カレンダー</button>'+
+    '<button type="button" class="'+(schedMode==='list'?'on':'')+'" onclick="schedMode=\'list\';renderSched()">☰ リスト</button></span>';
+  var rows=allRows();
+  var body = schedMode==='cal' ? calHtml(rows) : listHtml(rows);
+  $('view').innerHTML='<div class="panel"><div class="bar">'+seg+mode+'</div>'+body+'</div>'+
+    '<p class="note">色＝制作状況（<span class="stag" style="background:#DDEBF7">企画/台本</span> <span class="stag" style="background:#FCE5CD">撮影</span> <span class="stag" style="background:#FFF2CC">編集</span> <span class="stag" style="background:#F4CCCC">修正中</span> <span class="stag" style="background:#D9D2E9">社内確認中</span> <span class="stag" style="background:#CFE2F3">納品</span> <span class="stag" style="background:#D9D9D9;color:#606060">投稿済</span>）</p>';
+}
+
+function calHtml(rows){
+  var y=calCur.y,m=calCur.m,byDay={};
+  rows.forEach(function(r){var d=pd(r.date);if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push(r);}});
+  var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  var tnow=new Date(),thisMonth=tnow.getFullYear()===y&&tnow.getMonth()===m;
+  var cells='';
+  ['日','月','火','水','木','金','土'].forEach(function(w,i){cells+='<div class="ch'+(i===0?' sun':i===6?' sat':'')+'">'+w+'</div>';});
+  for(var i=0;i<first;i++)cells+='<div class="cday out"></div>';
+  for(var d=1;d<=days;d++){
+    var ents=(byDay[d]||[]).map(function(r){
+      var c=STATUS_COLORS[r.status]||'#c5ccd7';
+      return '<div class="cent" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
+        '<span class="cdot" style="background:'+c+'"></span><span class="ct">'+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
+        (curCase==='ALL'?'<span class="sctag">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+'</span></div>';
+    }).join('');
+    cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+'"><span class="dnum">'+d+'</span>'+ents+'</div>';
+  }
+  var rem=(first+days)%7; if(rem)for(var j=rem;j<7;j++)cells+='<div class="cday out"></div>';
+  return '<div class="calhead"><button class="btn" type="button" onclick="calShift(-1)">‹ 前月</button><span class="cm">'+y+'年'+(m+1)+'月</span>'+
+    '<button class="btn" type="button" onclick="calShift(1)">翌月 ›</button><button class="btn" type="button" onclick="calToday()">今日</button></div>'+
+    '<div class="calwrap"><div class="cal">'+cells+'</div></div>';
+}
+
+function listHtml(rows){
+  var t0=new Date();t0.setHours(0,0,0,0);
+  var undated=[],up=[],past=[];
+  rows.forEach(function(r){var d=pd(r.date);
+    if(!d){ if(r.title) undated.push(r); return; }
+    r._d=d;(d>=t0?up:past).push(r);});
+  up.sort(function(a,b){return a._d-b._d;});
+  past.sort(function(a,b){return b._d-a._d;});
+  function tr(r){var d=r._d;
+    var ds=d?(d.getMonth()+1)+'/'+d.getDate()+'（'+'日月火水木金土'.charAt(d.getDay())+'）':'—';
+    return '<tr><td class="num">'+ds+(r.time?' '+esc(r.time):'')+'</td>'+
+      (curCase==='ALL'?'<td><span class="sctag">'+esc(r.sc)+'</span></td>':'')+
+      '<td class="wr">'+esc(r.title)+'</td><td>'+mediaBadge(r.media)+'</td><td>'+stag(r.status)+'</td><td>'+esc(r.editor||'')+'</td></tr>';}
+  function sec(title,arr){if(!arr.length)return '';
+    return '<div class="grp-h2">'+title+'</div><div class="tbl-scroll"><table><thead><tr><th>投稿日</th>'+
+      (curCase==='ALL'?'<th>案件</th>':'')+'<th>コンテンツ</th><th>媒体</th><th>状況</th><th>担当</th></tr></thead><tbody>'+arr.map(tr).join('')+'</tbody></table></div>';}
+  return sec('📌 今後の予定 — 期日が近い順（'+up.length+'件）',up)+
+    sec('🎬 日付未定・制作中（'+undated.length+'件）',undated)+
+    sec('✅ 直近の投稿済み — 新しい順（'+past.length+'件）',past);
+}
+
+function numv(x){ return (x===null||x===undefined||x==='')?null:+x; }
+function kst(t,pace,a){ if(t===null||t===0||a===null)return 'none'; if(!pace)return a>0?'good':'none'; var r=a/pace; return r>=1?'good':r>=0.6?'warn':'bad'; }
+function renderKpi(){
+  var seg='<span class="switch">'+[['all','すべて'],['school','スクール'],['talent','タレント']].map(function(x){
+    return '<button type="button" class="'+(kpiSeg===x[0]?'on':'')+'" onclick="kpiSeg=\''+x[0]+'\';renderKpi()">'+x[1]+'</button>';}).join('')+'</span>';
+  var cases=B.kpi.filter(function(c){return kpiSeg==='all'||c.seg===kpiSeg;});
+  var cards=cases.map(function(c){
+    var rs=[];
+    var rows=c.kpis.map(function(k){
+      var t=numv(k[1]),pace=numv(k[2]),a=numv(k[3]);
+      var st=kst(t,pace,a);
+      if(t&&pace&&a!==null)rs.push(Math.min(a/pace,3));
+      var w=(pace&&a!==null)?Math.min(Math.max(a/pace*100,0),100):0;
+      var isCv=/LINE|面談/.test(k[0]);
+      var pct=(pace&&a!==null)?(Math.round(a/pace*1000)/10)+'%':'—';
+      return '<div class="krow2"><span class="kn2'+(isCv?' cv':'')+'" title="'+esc(k[0])+'">'+(isCv?'🎯 ':'')+esc(k[0])+'</span>'+
+        '<span class="kv2"><b>'+(a===null?'—':a.toLocaleString())+'</b> <span style="color:var(--ink-3)">/ '+(t===null?'—':t.toLocaleString())+'</span></span>'+
+        '<span class="kbar"><i class="b-'+st+'" style="width:'+w+'%"></i></span><span class="kp2 c-'+st+'">'+pct+'</span></div>';
+    }).join('');
+    var ov=rs.length?Math.round(rs.reduce(function(x,y){return x+y;},0)/rs.length*100):null;
+    var ost=ov===null?'none':ov>=100?'good':ov>=60?'warn':'bad';
+    return '<div class="kcard"><div class="kh2"><span class="knm">'+esc(c.name)+'</span>'+
+      '<span class="kov c-'+ost+'">'+(ov===null?'—':ov+'%')+'</span></div>'+rows+'</div>';
+  }).join('');
+  $('view').innerHTML='<div class="panel" style="margin-bottom:14px"><div class="bar">'+seg+
+    '<span class="spacer"></span><span class="note" style="margin:0">'+esc(B.kpiBasis)+'</span></div></div>'+
+    '<div class="kgrid">'+cards+'</div>'+
+    '<p class="note">実績 / 月間目標。バーと%は「今日までのペース目標」比（100%以上=順調／60%以上=注意／60%未満=要対応）。🎯=コンバージョン（LINE登録・面談予約）。カード右上の%は測定可能なKPIの平均進捗です。</p>';
+}
+render();
+</script>
+</body>
+</html>
