@@ -407,8 +407,9 @@ function renderSched(){
   var body = schedMode==='cal' ? calHtml(rows) : listHtml(rows);
   $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+'</div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
-    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+body+'</div>'+
-    '<p class="note"><span class="dmk"></span>＝投稿済（完了）／<span class="dmk half"></span>＝納品済み・投稿待ち。色＝制作状況（<span class="stag" style="background:#DDEBF7">企画/台本</span> <span class="stag" style="background:#FCE5CD">撮影</span> <span class="stag" style="background:#FFF2CC">編集</span> <span class="stag" style="background:#F4CCCC">修正中</span> <span class="stag" style="background:#D9D2E9">社内確認中</span> <span class="stag" style="background:#CFE2F3">納品</span> <span class="stag" style="background:#D9D9D9;color:#606060">投稿済</span>）</p>';
+    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+'<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">色＝制作状況</span>'+
+    '<span class="stag" style="background:#DDEBF7">企画/台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3"><span class="dmk half" style="margin-right:4px"></span>納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060"><span class="dmk" style="margin-right:4px"></span>投稿済=完了</span></div>'+body+'</div>'+
+    '<p class="note">チップの色は運用スケジュールシートの「状況」と同じ色です。</p>';
 }
 
 function calHtml(rows){
