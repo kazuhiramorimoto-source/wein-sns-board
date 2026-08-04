@@ -158,9 +158,11 @@
     データはWEIN_SNS運用スケジュール／KPI横断まとめのスナップショットです。スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
   </footer>
 </div>
-<script src="data.js"></script>
+<script src="data.js?v=20260805a"></script>
 <script>
 var B = window.BOARD;
+var SCHOOL_SET={"HERO'ZZ":1,"CREATOR'ZZ":1,"RVA":1,"AI+":1,"MERISE":1};
+B.sched.forEach(function(c){ if(!c.seg) c.seg = SCHOOL_SET[c.name]?'school':'talent'; });
 var curTab='schools', schedMode='cal', curCase='ALL', kpiSeg='all', curSchool=null;
 var calCur=null;
 var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3'};
