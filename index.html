@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>WEIN SNS BOARD｜スケジュール & KPI</title>
+<title>WEIN スクール横串オーガニック｜スケジュール & KPI進捗</title>
 <style>
   :root{
     --bg:#eef1f5; --surface:#ffffff; --surface-2:#f4f6f9; --surface-3:#e7ebf1;
@@ -144,6 +144,11 @@
 </style>
 <style>
 /* ---- readability polish v4 ---- */
+.dmk{display:inline-block;width:13px;height:13px;border-radius:50%;background:#3a3f47;color:#fff;font-size:9px;font-weight:800;line-height:13px;text-align:center;margin-right:5px;vertical-align:-1.5px;}
+.dmk::after{content:'✓';}
+.dmk.half{background:transparent;border:1.5px solid #565e6c;color:#565e6c;line-height:10.5px;}
+.cent.done{opacity:.75;}
+.cent.done .ct{text-decoration:none;}
 .ic{width:15px;height:15px;vertical-align:-2.5px;margin-right:5px;}
 .tabs .ic{width:16px;height:16px;}
 .cvmark{display:inline-block;font-size:8.5px;font-weight:800;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-right:5px;vertical-align:1px;letter-spacing:.05em;}
@@ -192,14 +197,14 @@ tbody tr:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, var
 <div class="wrap">
   <header>
     <span class="badge">WEIN</span>
-    <div><h1>SNS BOARD｜スケジュール & KPI</h1><div class="sub" id="subline"></div></div>
+    <div><h1>スクール横串オーガニック｜スケジュール & KPI進捗</h1><div class="sub" id="subline"></div></div>
     <div class="spacer"></div>
     <span class="pill p-done"><span class="d"></span>閲覧用ボード</span>
   </header>
   <div class="tabs" id="tabs"></div>
   <div id="view"></div>
   <footer>
-    WEIN SNS BOARD ─ オーガニックSNSの投稿スケジュールとKPI進捗の共有ボード（閲覧専用）。<br>
+    WEIN スクール横串オーガニック ─ 全スクール・案件の投稿スケジュールとKPI進捗の共有ボード（閲覧専用）。<br>
     データはWEIN_SNS運用スケジュール／KPI横断まとめのスナップショットです。スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
   </footer>
 </div>
@@ -310,10 +315,10 @@ function renderSchoolDetail(){
   up.sort(function(a,b){ return a[0]-b[0]; });
   var rows=up.slice(0,20).map(function(x){ var d=x[0], r=x[1];
     return '<div class="fixrow"><span class="tc num">'+(d.getMonth()+1)+'/'+d.getDate()+(r[1]?' '+esc(r[1]):'')+'</span>'+
-      '<div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+(r[5]?'<small>／ '+esc(r[5])+'</small>':'')+'</div>'+(r[4]?stag(r[4]):'')+'</div>';
+      '<div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+(r[5]?'<small>／ '+esc(r[5])+'</small>':'')+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
   }).join('');
   var undRows=und.map(function(r){
-    return '<div class="fixrow"><span class="tc">未定</span><div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+'</div>'+(r[4]?stag(r[4]):'')+'</div>';
+    return '<div class="fixrow"><span class="tc">未定</span><div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
   }).join('');
   var schedHtml='<div class="panel" style="padding:12px 16px">'+
     (rows||'<p class="note" style="margin:4px 0">今後の投稿予定はまだ入っていません。</p>')+undRows+
@@ -345,7 +350,7 @@ function renderSched(){
   $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+'</div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+body+'</div>'+
-    '<p class="note">色＝制作状況（<span class="stag" style="background:#DDEBF7">企画/台本</span> <span class="stag" style="background:#FCE5CD">撮影</span> <span class="stag" style="background:#FFF2CC">編集</span> <span class="stag" style="background:#F4CCCC">修正中</span> <span class="stag" style="background:#D9D2E9">社内確認中</span> <span class="stag" style="background:#CFE2F3">納品</span> <span class="stag" style="background:#D9D9D9;color:#606060">投稿済</span>）</p>';
+    '<p class="note"><span class="dmk"></span>＝投稿済（完了）／<span class="dmk half"></span>＝納品済み・投稿待ち。色＝制作状況（<span class="stag" style="background:#DDEBF7">企画/台本</span> <span class="stag" style="background:#FCE5CD">撮影</span> <span class="stag" style="background:#FFF2CC">編集</span> <span class="stag" style="background:#F4CCCC">修正中</span> <span class="stag" style="background:#D9D2E9">社内確認中</span> <span class="stag" style="background:#CFE2F3">納品</span> <span class="stag" style="background:#D9D9D9;color:#606060">投稿済</span>）</p>';
 }
 
 function calHtml(rows){
@@ -359,8 +364,8 @@ function calHtml(rows){
   for(var d=1;d<=days;d++){
     var ents=(byDay[d]||[]).map(function(r){
       var c=STATUS_COLORS[r.status]||'#e8ecf2';
-      return '<div class="cent" style="background:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
-        '<span class="ct">'+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
+      return '<div class="cent'+(r.status==='投稿済'?' done':'')+'" style="background:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
+        '<span class="ct">'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
         (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+'</span></div>';
     }).join('');
     var dow=(first+d-1)%7;
@@ -384,7 +389,7 @@ function listHtml(rows){
     var ds=d?(d.getMonth()+1)+'/'+d.getDate()+'（'+'日月火水木金土'.charAt(d.getDay())+'）':'—';
     return '<tr><td class="num">'+ds+(r.time?' '+esc(r.time):'')+'</td>'+
       (isAgg()?'<td><span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span></td>':'')+
-      '<td class="wr">'+esc(r.title)+'</td><td>'+mediaBadge(r.media)+'</td><td>'+stag(r.status)+'</td><td>'+esc(r.editor||'')+'</td></tr>';}
+      '<td class="wr">'+esc(r.title)+'</td><td>'+mediaBadge(r.media)+'</td><td>'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+stag(r.status)+'</td><td>'+esc(r.editor||'')+'</td></tr>';}
   function sec(title,arr){if(!arr.length)return '';
     return '<div class="grp-h2">'+title+'</div><div class="tbl-scroll"><table><thead><tr><th>投稿日</th>'+
       (isAgg()?'<th>案件</th>':'')+'<th>コンテンツ</th><th>媒体</th><th>状況</th><th>担当</th></tr></thead><tbody>'+arr.map(tr).join('')+'</tbody></table></div>';}
