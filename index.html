@@ -196,6 +196,10 @@ tbody tr:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, var
 </style>
 <style>
 /* ---- design v7: premium pass ---- */
+.cent.draft{background:transparent!important;border:1.5px dashed var(--border-strong);}
+.cent.draft .ct{color:var(--ink-2);font-weight:600;}
+.dlabel{display:inline-block;font-size:8.5px;font-weight:800;border:1px solid var(--warn);color:var(--warn-ink);border-radius:4px;padding:0 4px;margin-right:4px;vertical-align:1px;letter-spacing:.03em;}
+.draftd{font-size:9.5px;color:var(--warn-ink);font-weight:700;margin-top:1px;}
 :root{ --grad:linear-gradient(135deg,#4a57c9 0%,#7c5cf0 60%,#a855f7 100%); }
 body{background:
   radial-gradient(1200px 500px at 85% -10%, rgba(124,92,240,.07), transparent 60%),
@@ -266,7 +270,7 @@ footer{font-size:10.5px;}
     データはWEIN_SNS運用スケジュール／KPI横断まとめのスナップショットです。スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
   </footer>
 </div>
-<script src="data.js?v=20260805a"></script>
+<script src="data.js?v=20260805b"></script>
 <script>
 var B = window.BOARD;
 var SCHOOL_SET={"HERO'ZZ":1,"CREATOR'ZZ":1,"RVA":1,"AI+":1,"MERISE":1};
@@ -304,7 +308,7 @@ function allRows(){
     if(curCase==='SCHOOL' && c.seg!=='school') return;
     if(curCase==='TALENT' && c.seg!=='talent') return;
     if(!isAgg() && c.name!==curCase) return;
-    c.rows.forEach(function(r){ out.push({sc:c.name,seg:c.seg,date:r[0],time:r[1],title:r[2],media:r[3],status:r[4],editor:r[5]}); });
+    c.rows.forEach(function(r){ out.push({sc:c.name,seg:c.seg,date:r[0],time:r[1],title:r[2],media:r[3],status:r[4],editor:r[5],draft:r[6]||''}); });
   });
   return out;
 }
@@ -373,7 +377,7 @@ function renderSchoolDetail(){
   up.sort(function(a,b){ return a[0]-b[0]; });
   var rows=up.slice(0,20).map(function(x){ var d=x[0], r=x[1];
     return '<div class="fixrow"><span class="tc num">'+(d.getMonth()+1)+'/'+d.getDate()+(r[1]?' '+esc(r[1]):'')+'</span>'+
-      '<div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+(r[5]?'<small>／ '+esc(r[5])+'</small>':'')+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
+      '<div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+(r[5]?'<small>／ '+esc(r[5])+'</small>':'')+(r[6]&&r[6]!==r[0]?'<small>／ 初稿 '+esc(r[6])+'</small>':'')+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
   }).join('');
   var undRows=und.map(function(r){
     return '<div class="fixrow"><span class="tc">未定</span><div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
@@ -408,22 +412,29 @@ function renderSched(){
   $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+'</div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+'<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">色＝制作状況</span>'+
-    '<span class="stag" style="background:#DDEBF7">企画/台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3"><span class="dmk half" style="margin-right:4px"></span>納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060"><span class="dmk" style="margin-right:4px"></span>投稿済=完了</span></div>'+body+'</div>'+
+    '<span class="stag" style="background:#DDEBF7">企画/台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3"><span class="dmk half" style="margin-right:4px"></span>納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060"><span class="dmk" style="margin-right:4px"></span>投稿済=完了</span><span class="stag" style="background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2)"><span class="dlabel" style="margin-right:4px">初稿</span>点線＝初稿締切</span></div>'+body+'</div>'+
     '<p class="note">チップの色は運用スケジュールシートの「状況」と同じ色です。</p>';
 }
 
 function calHtml(rows){
   var y=calCur.y,m=calCur.m,byDay={};
-  rows.forEach(function(r){var d=pd(r.date);if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push(r);}});
+  rows.forEach(function(r){var d=pd(r.date);if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({g:false,r:r});}});
+  rows.forEach(function(r){ if(!r.draft||r.draft===r.date) return; var d=pd(r.draft); if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({g:true,r:r});} });
   var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
   var tnow=new Date(),thisMonth=tnow.getFullYear()===y&&tnow.getMonth()===m;
   var cells='';
   ['日','月','火','水','木','金','土'].forEach(function(w,i){cells+='<div class="ch'+(i===0?' sun':i===6?' sat':'')+'">'+w+'</div>';});
   for(var i=0;i<first;i++)cells+='<div class="cday out"></div>';
   for(var d=1;d<=days;d++){
-    var ents=(byDay[d]||[]).map(function(r){
+    var ents=(byDay[d]||[]).map(function(e){
+      var r=e.r;
+      if(e.g){
+        return '<div class="cent draft" title="初稿締切：'+esc(r.title)+'（'+esc(r.sc)+'・投稿予定 '+esc(r.date)+'）">'+
+          '<span class="ct"><span class="dlabel">初稿</span>'+
+          (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+esc(r.title)+'</span></div>';
+      }
       var c=STATUS_COLORS[r.status]||'#e8ecf2';
-      return '<div class="cent'+(r.status==='投稿済'?' done':'')+'" style="background:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
+      return '<div class="cent'+(r.status==='投稿済'?' done':'')+'" style="background:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+(r.draft?'・初稿'+esc(r.draft):'')+'）">'+
         '<span class="ct">'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
         (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+'</span></div>';
     }).join('');
@@ -446,7 +457,7 @@ function listHtml(rows){
   past.sort(function(a,b){return b._d-a._d;});
   function tr(r){var d=r._d;
     var ds=d?(d.getMonth()+1)+'/'+d.getDate()+'（'+'日月火水木金土'.charAt(d.getDay())+'）':'—';
-    return '<tr><td class="num">'+ds+(r.time?' '+esc(r.time):'')+'</td>'+
+    return '<tr><td class="num">'+ds+(r.time?' '+esc(r.time):'')+(r.draft&&r.draft!==r.date?'<div class="draftd">初稿 '+esc(r.draft)+'</div>':'')+'</td>'+
       (isAgg()?'<td><span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span></td>':'')+
       '<td class="wr">'+esc(r.title)+'</td><td>'+mediaBadge(r.media)+'</td><td>'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+stag(r.status)+'</td><td>'+esc(r.editor||'')+'</td></tr>';}
   function sec(title,arr){if(!arr.length)return '';
