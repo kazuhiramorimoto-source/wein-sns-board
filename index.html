@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
 <title>WEIN スクール横串オーガニック｜スケジュール & KPI進捗</title>
 <style>
   :root{
@@ -191,6 +193,62 @@ tbody tr:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, var
 .stat .sv{font-size:18px;}
 .sec-h3 h3{font-size:14px;border-left:4px solid var(--accent);padding-left:10px;}
 .cbox .cb{font-size:13px;}
+</style>
+<style>
+/* ---- design v7: premium pass ---- */
+:root{ --grad:linear-gradient(135deg,#4a57c9 0%,#7c5cf0 60%,#a855f7 100%); }
+body{background:
+  radial-gradient(1200px 500px at 85% -10%, rgba(124,92,240,.07), transparent 60%),
+  radial-gradient(900px 400px at -10% 0%, rgba(74,87,201,.06), transparent 55%),
+  var(--bg);}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:var(--grad);z-index:99;}
+.num,.kov,.stat .sv,.kp2,.kv2{font-family:"Inter",var(--mono);}
+header{position:sticky;top:0;z-index:50;margin:-24px -20px 18px;padding:14px 20px;
+  background:color-mix(in srgb, var(--bg) 78%, transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);}
+.badge{background:var(--grad);color:#fff;letter-spacing:.16em;padding:4px 10px;border-radius:7px;box-shadow:0 2px 8px rgba(99,82,230,.35);}
+h1{font-size:19px;font-weight:800;letter-spacing:-.02em;}
+.sub{font-size:11px;}
+.tabs{background:var(--surface);border-radius:13px;padding:4px;box-shadow:var(--shadow);}
+.tabs button{border-radius:9px;font-weight:800;color:var(--ink-3);}
+.tabs button.on{background:var(--grad);color:#fff;box-shadow:0 3px 10px rgba(99,82,230,.35);}
+.tabs button.on .ic{stroke:#fff;}
+.panel,.kcard,.scard,.cbox{border-radius:16px;}
+.panel{box-shadow:0 1px 2px rgba(20,24,33,.04), 0 8px 28px rgba(20,24,33,.05);}
+.kcard,.scard{box-shadow:0 1px 2px rgba(20,24,33,.04), 0 6px 22px rgba(20,24,33,.06);border-color:color-mix(in srgb, var(--border) 70%, transparent);}
+.scard:hover{box-shadow:0 4px 10px rgba(99,82,230,.12), 0 16px 40px rgba(20,24,33,.12);}
+.kcard .kov{font-size:25px;font-weight:800;}
+.stat{border:1px solid color-mix(in srgb, var(--border) 60%, transparent);}
+.stat .sv{font-size:19px;font-weight:800;}
+.sec-h3 h3{border-left:none;padding-left:0;font-size:14.5px;}
+.sec-h3 h3::before{content:'';display:inline-block;width:22px;height:4px;border-radius:2px;background:var(--grad);margin-right:9px;vertical-align:3px;}
+.sec-h3 .line{background:color-mix(in srgb, var(--border) 80%, transparent);}
+.switch{border-radius:11px;}
+.switch button{border-radius:8px;}
+.btn{border-radius:10px;transition:.15s;}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+.cal .ch{padding:8px 0;letter-spacing:.1em;}
+.cday{transition:background .15s;}
+.cday:hover{background:color-mix(in srgb, var(--surface) 90%, var(--accent) 10%);}
+.cday.today{outline:2px solid transparent;border-radius:2px;box-shadow:inset 0 0 0 2px #7c5cf0;}
+.cday.today .dnum{background:var(--grad);}
+.ovbar{height:7px;}
+.ovbar i{background:var(--grad);}
+.ovbar i.b-warn{background:linear-gradient(90deg,#d67d12,#f0a83a);}
+.ovbar i.b-bad{background:linear-gradient(90deg,#dd3b3b,#f26a6a);}
+.cvmark{background:var(--grad);}
+.krow2.cvrow{background:color-mix(in srgb, var(--accent-soft) 75%, transparent);border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);}
+footer{font-size:10.5px;}
+::-webkit-scrollbar{height:8px;width:8px;}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px;}
+@media (prefers-color-scheme:dark){
+  body{background:
+    radial-gradient(1200px 500px at 85% -10%, rgba(124,92,240,.10), transparent 60%),
+    radial-gradient(900px 400px at -10% 0%, rgba(74,87,201,.08), transparent 55%),
+    var(--bg);}
+  .panel{box-shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 34px rgba(0,0,0,.35);}
+}
 </style>
 </head>
 <body>
