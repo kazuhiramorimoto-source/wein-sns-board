@@ -144,6 +144,12 @@
 </style>
 <style>
 /* ---- readability polish v4 ---- */
+.ic{width:15px;height:15px;vertical-align:-2.5px;margin-right:5px;}
+.tabs .ic{width:16px;height:16px;}
+.cvmark{display:inline-block;font-size:8.5px;font-weight:800;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-right:5px;vertical-align:1px;letter-spacing:.05em;}
+.gdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:0;}
+.calhead .btn{display:inline-flex;align-items:center;}
+.calhead .btn .ic{margin:0 2px;}
 body{font-size:14.5px;}
 h1{font-size:18px;}
 .tabs button{font-size:13.5px;padding:9px 18px;}
@@ -207,6 +213,18 @@ var calCur=null;
 var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3'};
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function $(id){return document.getElementById(id);}
+function svgw(p){return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';}
+var IC={
+ school: svgw('<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 21v-4h6v4M8.5 7.5h1.5M14 7.5h1.5M8.5 11.5h1.5M14 11.5h1.5M8.5 15.5h1.5M14 15.5h1.5"/>'),
+ cal: svgw('<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'),
+ chart: svgw('<path d="M4 20v-8M10 20V5M16 20v-5M21 20.5H3"/>'),
+ all: svgw('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3.6 3.2 14.4 0 18M12 3c-3.2 3.6-3.2 14.4 0 18"/>'),
+ users: svgw('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.6"/><path d="M16 14.4c3 .3 5.5 2.4 5.5 5.6"/>'),
+ list: svgw('<path d="M8.5 6h12M8.5 12h12M8.5 18h12M3.8 6h.01M3.8 12h.01M3.8 18h.01"/>'),
+ chevL: svgw('<path d="M14.5 6l-6 6 6 6"/>'),
+ chevR: svgw('<path d="M9.5 6l6 6-6 6"/>')
+};
+
 function stag(st,extra){var c=STATUS_COLORS[st]||'#ECEFF3';var fg=st==='投稿済'?'#606060':'#3d3d3d';
   return '<span class="stag" style="background:'+c+';color:'+fg+'">'+esc(st||'予定')+(extra||'')+'</span>';}
 function mediaBadge(m){
@@ -230,7 +248,7 @@ function allRows(){
 
 function render(){
   $('subline').textContent = B.updated+' 時点のスナップショット';
-  var tabs=[{k:'schools',l:'🏫 スクール'},{k:'sched',l:'📅 スケジュール'},{k:'kpi',l:'📊 KPI進捗'}];
+  var tabs=[{k:'schools',l:IC.school+'スクール'},{k:'sched',l:IC.cal+'スケジュール'},{k:'kpi',l:IC.chart+'KPI進捗'}];
   $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="'+(curTab===t.k?'on':'')+'" onclick="curTab=\''+t.k+'\';render()">'+t.l+'</button>';}).join('');
   if(curTab==='schools') renderSchools();
   else if(curTab==='sched') renderSched();
@@ -265,8 +283,8 @@ function renderSchools(){
   }
   var sHtml='', tHtml='';
   B.sched.forEach(function(c,i){ if(c.seg==='school') sHtml+=card(c,i); else tHtml+=card(c,i); });
-  $('view').innerHTML=sh3('🏫 スクール')+'<div class="sgrid">'+sHtml+'</div>'+
-    sh3('🎤 非スクール（タレント・案件）')+'<div class="sgrid">'+tHtml+'</div>'+
+  $('view').innerHTML=sh3('スクール')+'<div class="sgrid">'+sHtml+'</div>'+
+    sh3('非スクール（タレント・案件）')+'<div class="sgrid">'+tHtml+'</div>'+
     '<p class="note"><b>現時点達成率</b>＝現在実績÷今日までのペース目標／<b>月間達成率</b>＝現在実績÷月間目標（いずれも各KPIの平均）。スクール5校はコンセプト設計付き。</p>';
 }
 function renderSchoolDetail(){
@@ -279,7 +297,7 @@ function renderSchoolDetail(){
   var head='<div class="sd-head"><button class="btn" type="button" onclick="curSchool=null;render()">← 一覧</button><h2>'+esc(name)+'</h2>'+
     '<span class="kovwrap" style="text-align:left"><span class="kovlbl">現時点達成率</span><span class="kov c-'+pst+'" style="font-size:19px">'+(pace===null?'—':pace+'%')+'</span></span>'+
     '<span class="kovwrap" style="text-align:left"><span class="kovlbl">月間達成率</span><span class="kov" style="font-size:19px;color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span>'+
-    '<span class="spacer"></span><button class="btn" type="button" onclick="openCal('+idx+')">📅 カレンダーで見る</button></div>';
+    '<span class="spacer"></span><button class="btn" type="button" onclick="openCal('+idx+')">'+IC.cal+'カレンダーで見る</button></div>';
   var conceptHtml=con.length
     ? '<div class="concept-g">'+con.map(function(c,i){
         return '<div class="cbox'+(i===0?' hero':'')+'"><div class="ci">'+esc(c[0])+'</div><div class="cb">'+esc(c[1])+'</div></div>';
@@ -299,11 +317,11 @@ function renderSchoolDetail(){
   }).join('');
   var schedHtml='<div class="panel" style="padding:12px 16px">'+
     (rows||'<p class="note" style="margin:4px 0">今後の投稿予定はまだ入っていません。</p>')+undRows+
-    (up.length>20?'<p class="note" style="margin:8px 0 0">ほか '+(up.length-20)+' 件は「📅 カレンダーで見る」から。</p>':'')+'</div>';
+    (up.length>20?'<p class="note" style="margin:8px 0 0">ほか '+(up.length-20)+' 件は「カレンダーで見る」から。</p>':'')+'</div>';
   $('view').innerHTML=head+
-    sh3('🧭 コンセプト設計')+conceptHtml+
-    sh3('📊 KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+
-    sh3('📅 今後の投稿スケジュール — 期日が近い順')+schedHtml;
+    sh3('コンセプト設計')+conceptHtml+
+    sh3('KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+
+    sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml;
 }
 
 function setCase(i){ curCase = (i==='ALL'||i==='SCHOOL'||i==='TALENT')?i:B.sched[i].name; renderSched(); }
@@ -317,16 +335,16 @@ function renderSched(){
       return '<button type="button" class="'+(c.seg==='talent'?'tl':'sc')+(curCase===c.name?' on':'')+'" onclick="setCase('+i+')">'+esc(c.name)+'</button>'; }).join('');
   }
   var segAll='<span class="switch">'+
-    '<button type="button" class="'+(curCase==='ALL'?'on':'')+'" onclick="setCase(\'ALL\')">🌏 すべて</button>'+
-    '<button type="button" class="'+(curCase==='SCHOOL'?'on':'')+'" onclick="setCase(\'SCHOOL\')">🏫 スクール全体</button>'+
-    '<button type="button" class="'+(curCase==='TALENT'?'on':'')+'" onclick="setCase(\'TALENT\')">🎤 非スクール全体</button></span>';
-  var mode='<span class="switch"><button type="button" class="'+(schedMode==='cal'?'on':'')+'" onclick="schedMode=\'cal\';renderSched()">📅 カレンダー</button>'+
-    '<button type="button" class="'+(schedMode==='list'?'on':'')+'" onclick="schedMode=\'list\';renderSched()">☰ リスト</button></span>';
+    '<button type="button" class="'+(curCase==='ALL'?'on':'')+'" onclick="setCase(\'ALL\')">'+IC.all+'すべて</button>'+
+    '<button type="button" class="'+(curCase==='SCHOOL'?'on':'')+'" onclick="setCase(\'SCHOOL\')">'+IC.school+'スクール全体</button>'+
+    '<button type="button" class="'+(curCase==='TALENT'?'on':'')+'" onclick="setCase(\'TALENT\')">'+IC.users+'非スクール全体</button></span>';
+  var mode='<span class="switch"><button type="button" class="'+(schedMode==='cal'?'on':'')+'" onclick="schedMode=\'cal\';renderSched()">'+IC.cal+'カレンダー</button>'+
+    '<button type="button" class="'+(schedMode==='list'?'on':'')+'" onclick="schedMode=\'list\';renderSched()">'+IC.list+'リスト</button></span>';
   var rows=allRows();
   var body = schedMode==='cal' ? calHtml(rows) : listHtml(rows);
   $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+'</div>'+
-    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">🏫 スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
-    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">🎤 非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+body+'</div>'+
+    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
+    '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+body+'</div>'+
     '<p class="note">色＝制作状況（<span class="stag" style="background:#DDEBF7">企画/台本</span> <span class="stag" style="background:#FCE5CD">撮影</span> <span class="stag" style="background:#FFF2CC">編集</span> <span class="stag" style="background:#F4CCCC">修正中</span> <span class="stag" style="background:#D9D2E9">社内確認中</span> <span class="stag" style="background:#CFE2F3">納品</span> <span class="stag" style="background:#D9D9D9;color:#606060">投稿済</span>）</p>';
 }
 
@@ -349,8 +367,8 @@ function calHtml(rows){
     cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+((dow===0||dow===6)?' wk':'')+'"><span class="dnum">'+d+'</span>'+ents+'</div>';
   }
   var rem=(first+days)%7; if(rem)for(var j=rem;j<7;j++)cells+='<div class="cday out"></div>';
-  return '<div class="calhead"><button class="btn" type="button" onclick="calShift(-1)">‹ 前月</button><span class="cm">'+y+'年'+(m+1)+'月</span>'+
-    '<button class="btn" type="button" onclick="calShift(1)">翌月 ›</button><button class="btn" type="button" onclick="calToday()">今日</button></div>'+
+  return '<div class="calhead"><button class="btn" type="button" onclick="calShift(-1)">'+IC.chevL+'前月</button><span class="cm">'+y+'年'+(m+1)+'月</span>'+
+    '<button class="btn" type="button" onclick="calShift(1)">翌月'+IC.chevR+'</button><button class="btn" type="button" onclick="calToday()">今日</button></div>'+
     '<div class="calwrap"><div class="cal">'+cells+'</div></div>';
 }
 
@@ -370,9 +388,9 @@ function listHtml(rows){
   function sec(title,arr){if(!arr.length)return '';
     return '<div class="grp-h2">'+title+'</div><div class="tbl-scroll"><table><thead><tr><th>投稿日</th>'+
       (isAgg()?'<th>案件</th>':'')+'<th>コンテンツ</th><th>媒体</th><th>状況</th><th>担当</th></tr></thead><tbody>'+arr.map(tr).join('')+'</tbody></table></div>';}
-  return sec('📌 今後の予定 — 期日が近い順（'+up.length+'件）',up)+
-    sec('🎬 日付未定・制作中（'+undated.length+'件）',undated)+
-    sec('✅ 直近の投稿済み — 新しい順（'+past.length+'件）',past);
+  return sec('<span class="gdot" style="background:var(--accent)"></span>今後の予定 — 期日が近い順（'+up.length+'件）',up)+
+    sec('<span class="gdot" style="background:var(--warn)"></span>日付未定・制作中（'+undated.length+'件）',undated)+
+    sec('<span class="gdot" style="background:var(--good)"></span>直近の投稿済み — 新しい順（'+past.length+'件）',past);
 }
 
 function numv(x){ return (x===null||x===undefined||x==='')?null:+x; }
@@ -387,7 +405,7 @@ function kpiCardHtml(c){
     var w=ratio!==null?Math.min(Math.max(ratio*100,0),100):0;
     var isCv=/LINE|面談/.test(k[0]);
     var pct=ratio!==null?Math.round(ratio*100)+'%':'—';
-    return '<div class="krow2'+(isCv?' cvrow':'')+'"><span class="kn2'+(isCv?' cv':'')+'" title="月間目標 '+(t===null?'—':t.toLocaleString())+'">'+(isCv?'🎯 ':'')+esc(k[0])+'</span>'+
+    return '<div class="krow2'+(isCv?' cvrow':'')+'"><span class="kn2'+(isCv?' cv':'')+'" title="月間目標 '+(t===null?'—':t.toLocaleString())+'">'+(isCv?'<span class="cvmark">CV</span>':'')+esc(k[0])+'</span>'+
       '<span class="kv2"><b>'+(a===null?'—':a.toLocaleString())+'</b><span class="tgt"> /月間 '+(t===null?'—':t.toLocaleString())+'</span></span>'+
       '<span class="kbar"><i class="b-'+st+'" style="width:'+w+'%"></i></span><span class="kp2 c-'+st+'">'+pct+'</span></div>';
   }).join('');
@@ -406,7 +424,7 @@ function renderKpi(){
     '<span class="lgd"><span class="lgi"><i class="ld b-good"></i>順調 100%〜</span><span class="lgi"><i class="ld b-warn"></i>注意 60%〜</span><span class="lgi"><i class="ld b-bad"></i>要対応 〜60%</span></span>'+
     '<span class="spacer"></span><span class="note" style="margin:0">'+esc(B.kpiBasis)+'</span></div></div>'+
     '<div class="kgrid">'+cards+'</div>'+
-    '<p class="note"><b>%＝現時点達成率</b>（現在実績 ÷ 今日までのペース目標）。<span class="c-good" style="font-weight:800">100%以上＝順調</span>／<span class="c-warn" style="font-weight:800">60%以上＝注意</span>／<span class="c-bad" style="font-weight:800">60%未満＝要対応</span>。「/月間」＝月間目標。🎯＝コンバージョン（LINE登録・面談予約）。カード右上＝各KPIの現時点達成率の平均です。</p>';
+    '<p class="note"><b>%＝現時点達成率</b>（現在実績 ÷ 今日までのペース目標）。<span class="c-good" style="font-weight:800">100%以上＝順調</span>／<span class="c-warn" style="font-weight:800">60%以上＝注意</span>／<span class="c-bad" style="font-weight:800">60%未満＝要対応</span>。「/月間」＝月間目標。<span class="cvmark">CV</span>＝コンバージョン（LINE登録・面談予約）。カード右上＝各KPIの現時点達成率の平均です。</p>';
 }
 render();
 </script>
