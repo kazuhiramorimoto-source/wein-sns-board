@@ -142,6 +142,45 @@
   .fixrow .fx small{color:var(--ink-3);font-weight:500;}
   footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);font-size:10.5px;color:var(--ink-3);line-height:1.8;}
 </style>
+<style>
+/* ---- readability polish v4 ---- */
+body{font-size:14.5px;}
+h1{font-size:18px;}
+.tabs button{font-size:13.5px;padding:9px 18px;}
+.tabs button.on{color:var(--accent-ink);}
+.switch button{font-size:11.5px;padding:5px 13px;}
+.switch button.sc.on{background:var(--accent-soft);color:var(--accent-ink);}
+.switch button.tl.on{background:#F3E8FF;color:#7E22CE;}
+@media (prefers-color-scheme:dark){ .switch button.tl.on{background:#2d1b45;color:#d0aaff;} }
+.cday{min-height:120px;font-size:11.5px;padding:6px 7px;}
+.cday.wk{background:color-mix(in srgb, var(--surface) 94%, var(--accent) 6%);}
+.cday.wk.out,.cday.out{background:var(--surface-2);}
+.cday.today{outline:2px solid var(--accent);outline-offset:-2px;}
+.cent{border-left:none;border-radius:6px;padding:3px 7px;margin-top:5px;}
+.cent .ct{color:#2b2e33;font-weight:700;font-size:11px;}
+.cent .ct b{color:#111;}
+.grp-h2{font-size:12px;color:var(--ink-2);}
+td.wr{font-size:12.5px;}
+tbody tr:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, var(--surface) 45%);}
+.krow2{font-size:12.5px;padding:8px 0;}
+.krow2 .kv2 b{font-size:14.5px;}
+.kbar{width:88px;height:8px;border-radius:4px;}
+.krow2 .kp2{font-size:13.5px;min-width:56px;}
+.krow2.cvrow{background:var(--accent-soft);border-radius:8px;padding:8px 10px;border-bottom:none;margin:3px -4px;}
+.ovbar{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden;margin:2px 0 10px;}
+.ovbar i{display:block;height:100%;border-radius:3px;}
+.kcard .kov{font-size:23px;}
+.kcard .knm{font-size:16px;}
+.lgd{display:inline-flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.lgi{display:inline-flex;gap:5px;align-items:center;font-size:10.5px;font-weight:700;color:var(--ink-2);}
+.lgi .ld{width:10px;height:10px;border-radius:3px;display:inline-block;}
+.scard.sc{border-top:3px solid var(--accent);}
+.scard.tl{border-top:3px solid #a855f7;}
+.stat.good{background:var(--good-soft);} .stat.warn{background:var(--warn-soft);} .stat.bad{background:var(--bad-soft);}
+.stat .sv{font-size:18px;}
+.sec-h3 h3{font-size:14px;border-left:4px solid var(--accent);padding-left:10px;}
+.cbox .cb{font-size:13px;}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -217,10 +256,10 @@ function renderSchools(){
     var pace=schoolAch(kc), month=schoolMonthAch(kc);
     var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
     var up=c.rows.filter(function(r){ var d=pd(r[0]); return d&&d>=t0; }).length;
-    return '<div class="scard" onclick="openSchoolIdx('+i+')"><div class="sn2">'+esc(c.name)+
+    return '<div class="scard '+(c.seg==='talent'?'tl':'sc')+'" onclick="openSchoolIdx('+i+')"><div class="sn2">'+esc(c.name)+
       '<span class="sctag'+(c.seg==='talent'?' tl':'')+'" style="margin-left:auto">'+(c.seg==='talent'?'非スクール':'スクール')+'</span></div>'+
       '<div class="statrow">'+
-      '<span class="stat"><span class="sl">現時点達成率</span><span class="sv c-'+pst+'">'+(pace===null?'—':pace+'%')+'</span></span>'+
+      '<span class="stat '+pst+'"><span class="sl">現時点達成率</span><span class="sv c-'+pst+'">'+(pace===null?'—':pace+'%')+'</span></span>'+
       '<span class="stat"><span class="sl">月間達成率</span><span class="sv" style="color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span></div>'+
       '<div class="steaser">今後の予定 '+up+'件 ／ タップで詳細</div></div>';
   }
@@ -275,7 +314,7 @@ function renderSched(){
   if(!calCur){ var t=new Date(); calCur={y:B.year,m:t.getMonth()}; }
   function segBtns(seg){
     return B.sched.map(function(c,i){ if(c.seg!==seg) return '';
-      return '<button type="button" class="'+(curCase===c.name?'on':'')+'" onclick="setCase('+i+')">'+esc(c.name)+'</button>'; }).join('');
+      return '<button type="button" class="'+(c.seg==='talent'?'tl':'sc')+(curCase===c.name?' on':'')+'" onclick="setCase('+i+')">'+esc(c.name)+'</button>'; }).join('');
   }
   var segAll='<span class="switch">'+
     '<button type="button" class="'+(curCase==='ALL'?'on':'')+'" onclick="setCase(\'ALL\')">🌏 すべて</button>'+
@@ -301,12 +340,13 @@ function calHtml(rows){
   for(var i=0;i<first;i++)cells+='<div class="cday out"></div>';
   for(var d=1;d<=days;d++){
     var ents=(byDay[d]||[]).map(function(r){
-      var c=STATUS_COLORS[r.status]||'#c5ccd7';
-      return '<div class="cent" style="border-left-color:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
+      var c=STATUS_COLORS[r.status]||'#e8ecf2';
+      return '<div class="cent" style="background:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
         '<span class="ct">'+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
         (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+'</span></div>';
     }).join('');
-    cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+'"><span class="dnum">'+d+'</span>'+ents+'</div>';
+    var dow=(first+d-1)%7;
+    cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+((dow===0||dow===6)?' wk':'')+'"><span class="dnum">'+d+'</span>'+ents+'</div>';
   }
   var rem=(first+days)%7; if(rem)for(var j=rem;j<7;j++)cells+='<div class="cday out"></div>';
   return '<div class="calhead"><button class="btn" type="button" onclick="calShift(-1)">‹ 前月</button><span class="cm">'+y+'年'+(m+1)+'月</span>'+
@@ -347,14 +387,15 @@ function kpiCardHtml(c){
     var w=ratio!==null?Math.min(Math.max(ratio*100,0),100):0;
     var isCv=/LINE|面談/.test(k[0]);
     var pct=ratio!==null?Math.round(ratio*100)+'%':'—';
-    return '<div class="krow2"><span class="kn2'+(isCv?' cv':'')+'" title="月間目標 '+(t===null?'—':t.toLocaleString())+'">'+(isCv?'🎯 ':'')+esc(k[0])+'</span>'+
+    return '<div class="krow2'+(isCv?' cvrow':'')+'"><span class="kn2'+(isCv?' cv':'')+'" title="月間目標 '+(t===null?'—':t.toLocaleString())+'">'+(isCv?'🎯 ':'')+esc(k[0])+'</span>'+
       '<span class="kv2"><b>'+(a===null?'—':a.toLocaleString())+'</b><span class="tgt"> /月間 '+(t===null?'—':t.toLocaleString())+'</span></span>'+
       '<span class="kbar"><i class="b-'+st+'" style="width:'+w+'%"></i></span><span class="kp2 c-'+st+'">'+pct+'</span></div>';
   }).join('');
   var avg=pr.length?Math.round(pr.reduce(function(x,y){return x+y;},0)/pr.length*100):null;
   var ost=avg===null?'none':avg>=100?'good':avg>=60?'warn':'bad';
   return '<div class="kcard"><div class="kh2"><span class="knm">'+esc(c.name)+'</span>'+
-    '<span class="kovwrap"><span class="kovlbl">現時点達成率</span><span class="kov c-'+ost+'">'+(avg===null?'—':avg+'%')+'</span></span></div>'+rows+'</div>';
+    '<span class="kovwrap"><span class="kovlbl">現時点達成率</span><span class="kov c-'+ost+'">'+(avg===null?'—':avg+'%')+'</span></span></div>'+
+    '<div class="ovbar"><i class="b-'+ost+'" style="width:'+(avg===null?0:Math.min(avg,100))+'%"></i></div>'+rows+'</div>';
 }
 function renderKpi(){
   var seg='<span class="switch">'+[['all','すべて'],['school','スクール'],['talent','タレント']].map(function(x){
@@ -362,6 +403,7 @@ function renderKpi(){
   var cases=B.kpi.filter(function(c){return kpiSeg==='all'||c.seg===kpiSeg;});
   var cards=cases.map(kpiCardHtml).join('');
   $('view').innerHTML='<div class="panel" style="margin-bottom:14px"><div class="bar">'+seg+
+    '<span class="lgd"><span class="lgi"><i class="ld b-good"></i>順調 100%〜</span><span class="lgi"><i class="ld b-warn"></i>注意 60%〜</span><span class="lgi"><i class="ld b-bad"></i>要対応 〜60%</span></span>'+
     '<span class="spacer"></span><span class="note" style="margin:0">'+esc(B.kpiBasis)+'</span></div></div>'+
     '<div class="kgrid">'+cards+'</div>'+
     '<p class="note"><b>%＝現時点達成率</b>（現在実績 ÷ 今日までのペース目標）。<span class="c-good" style="font-weight:800">100%以上＝順調</span>／<span class="c-warn" style="font-weight:800">60%以上＝注意</span>／<span class="c-bad" style="font-weight:800">60%未満＝要対応</span>。「/月間」＝月間目標。🎯＝コンバージョン（LINE登録・面談予約）。カード右上＝各KPIの現時点達成率の平均です。</p>';
