@@ -196,6 +196,12 @@ tbody tr:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, var
 </style>
 <style>
 /* ---- design v7: premium pass ---- */
+.ltile{display:inline-flex;align-items:center;justify-content:center;border-radius:9px;overflow:hidden;flex:none;border:1px solid color-mix(in srgb,var(--border) 65%,transparent);}
+.ltile img{width:100%;height:100%;display:block;}
+.ltile.fcontain img{object-fit:contain;padding:4px;box-sizing:border-box;}
+.ltile.fcover img{object-fit:cover;}
+.ltile.mono{background:var(--grad);color:#fff;font-weight:800;border:none;border-radius:50%;}
+.ltile.mono.tl{background:linear-gradient(135deg,#7E22CE,#c084fc);}
 .cent.draft{background:transparent!important;border:1.5px dashed var(--border-strong);}
 .cent.draft .ct{color:var(--ink-2);font-weight:600;}
 .dlabel{display:inline-block;font-size:8.5px;font-weight:800;border:1px solid var(--warn);color:var(--warn-ink);border-radius:4px;padding:0 4px;margin-right:4px;vertical-align:1px;letter-spacing:.03em;}
@@ -274,6 +280,19 @@ footer{font-size:10.5px;}
 <script>
 var B = window.BOARD;
 var SCHOOL_SET={"HERO'ZZ":1,"CREATOR'ZZ":1,"RVA":1,"AI+":1,"MERISE":1};
+var LOGOS={
+ "HERO'ZZ":{src:'logos/herozz.png',fit:'fcontain',bg:'#ffffff'},
+ "CREATOR'ZZ":{src:'logos/creatorzz.png',fit:'fcontain',bg:'#14294f'},
+ "RVA":{src:'logos/rva.jpg',fit:'fcover',bg:'#131c33'},
+ "AI+":{src:'logos/aiplus.jpg',fit:'fcover',bg:'#eef6fb'},
+ "REAL VALUE":{src:'logos/realvalue.png',fit:'fcontain',bg:'#ffffff'},
+ "LASTCALL":{src:'logos/lastcall.jpg',fit:'fcover',bg:'#111111'}
+};
+function logoTile(name,h,seg,w){
+ var L=LOGOS[name];
+ if(L){return '<span class="ltile '+L.fit+'" style="height:'+h+'px;width:'+(w||Math.round(h*2.6))+'px;background:'+L.bg+'"><img src="'+L.src+'" alt="'+esc(name)+'" loading="lazy"></span>';}
+ return '<span class="ltile mono'+(seg==='talent'?' tl':'')+'" style="height:'+h+'px;width:'+h+'px;font-size:'+Math.round(h*0.44)+'px">'+esc(name.charAt(0))+'</span>';
+}
 B.sched.forEach(function(c){ if(!c.seg) c.seg = SCHOOL_SET[c.name]?'school':'talent'; });
 var curTab='schools', schedMode='cal', curCase='ALL', kpiSeg='all', curSchool=null;
 var calCur=null;
@@ -341,7 +360,7 @@ function renderSchools(){
     var pace=schoolAch(kc), month=schoolMonthAch(kc);
     var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
     var up=c.rows.filter(function(r){ var d=pd(r[0]); return d&&d>=t0; }).length;
-    return '<div class="scard '+(c.seg==='talent'?'tl':'sc')+'" onclick="openSchoolIdx('+i+')"><div class="sn2">'+esc(c.name)+
+    return '<div class="scard '+(c.seg==='talent'?'tl':'sc')+'" onclick="openSchoolIdx('+i+')"><div class="sn2">'+logoTile(c.name,34,c.seg,88)+esc(c.name)+
       '<span class="sctag'+(c.seg==='talent'?' tl':'')+'" style="margin-left:auto">'+(c.seg==='talent'?'非スクール':'スクール')+'</span></div>'+
       '<div class="statrow">'+
       '<span class="stat '+pst+'"><span class="sl">現時点達成率</span><span class="sv c-'+pst+'">'+(pace===null?'—':pace+'%')+'</span></span>'+
@@ -361,7 +380,7 @@ function renderSchoolDetail(){
   var kc=schoolKpi(name), con=(B.concepts||{})[name]||[];
   var pace=schoolAch(kc), month=schoolMonthAch(kc);
   var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
-  var head='<div class="sd-head"><button class="btn" type="button" onclick="curSchool=null;render()">← 一覧</button><h2>'+esc(name)+'</h2>'+
+  var head='<div class="sd-head"><button class="btn" type="button" onclick="curSchool=null;render()">← 一覧</button>'+logoTile(name,42,sc.seg,108)+'<h2>'+esc(name)+'</h2>'+
     '<span class="kovwrap" style="text-align:left"><span class="kovlbl">現時点達成率</span><span class="kov c-'+pst+'" style="font-size:19px">'+(pace===null?'—':pace+'%')+'</span></span>'+
     '<span class="kovwrap" style="text-align:left"><span class="kovlbl">月間達成率</span><span class="kov" style="font-size:19px;color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span>'+
     '<span class="spacer"></span><button class="btn" type="button" onclick="openCal('+idx+')">'+IC.cal+'カレンダーで見る</button></div>';
@@ -486,7 +505,7 @@ function kpiCardHtml(c){
   }).join('');
   var avg=pr.length?Math.round(pr.reduce(function(x,y){return x+y;},0)/pr.length*100):null;
   var ost=avg===null?'none':avg>=100?'good':avg>=60?'warn':'bad';
-  return '<div class="kcard"><div class="kh2"><span class="knm">'+esc(c.name)+'</span>'+
+  return '<div class="kcard"><div class="kh2">'+logoTile(c.name,28,c.seg,72)+'<span class="knm">'+esc(c.name)+'</span>'+
     '<span class="kovwrap"><span class="kovlbl">現時点達成率</span><span class="kov c-'+ost+'">'+(avg===null?'—':avg+'%')+'</span></span></div>'+
     '<div class="ovbar"><i class="b-'+ost+'" style="width:'+(avg===null?0:Math.min(avg,100))+'%"></i></div>'+rows+'</div>';
 }
