@@ -1,0 +1,25 @@
+name: Update board data
+on:
+  schedule:
+    - cron: '30 22 * * *'   # 毎朝 7:30 JST（KPI自動集計 6:00 JST の後）
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build data.js from Google Sheets
+        env:
+          GOOGLE_OAUTH: ${{ secrets.GOOGLE_OAUTH }}
+        run: python scripts/build_data.py
+      - name: Commit & push if changed
+        run: |
+          git config user.name 'board-bot'
+          git config user.email 'board-bot@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && echo 'no changes' || (git commit -m "auto: 毎朝のデータ更新 $(date +'%Y-%m-%d')" && git push)
