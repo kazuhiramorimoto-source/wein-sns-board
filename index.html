@@ -65,6 +65,9 @@
   @media (prefers-color-scheme:dark){ .mb-x{background:#e8e8e8;color:#111;} }
   .mb-yt{background:#FDE3E1;color:#B3211B;} .mb-sh{background:#FCE7F3;color:#BE185D;}
   .sctag{display:inline-block;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap;vertical-align:1px;}
+  .lchip{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent);text-decoration:none;margin-left:4px;white-space:nowrap;vertical-align:1px;}
+  .lchip:hover{text-decoration:underline;}
+  .cent .lchip{font-size:9.5px;padding:0 5px;margin-left:3px;}
   .sctag.tl{background:#F3E8FF;color:#7E22CE;}
   @media (prefers-color-scheme:dark){ .sctag.tl{background:#2d1b45;color:#d0aaff;} }
   .segrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;}
@@ -335,6 +338,7 @@ function mediaBadge(m){
   if(m==='ショート動画')return '<span class="mb mb-sh">ショート</span>';
   return m?'<span class="mb">'+esc(m)+'</span>':'';}
 function pd(s){var m=/^(\d{1,2})\/(\d{1,2})/.exec(String(s||'').trim());if(!m)return null;return new Date(B.year,+m[1]-1,+m[2]);}
+function linkChips(ls){ if(!ls||!ls.length) return ''; return ls.map(function(l){ return '<a class="lchip" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+'</a>'; }).join(''); }
 
 function isAgg(){ return curCase==='ALL'||curCase==='SCHOOL'||curCase==='TALENT'; }
 function allRows(){
@@ -343,7 +347,7 @@ function allRows(){
     if(curCase==='SCHOOL' && c.seg!=='school') return;
     if(curCase==='TALENT' && c.seg!=='talent') return;
     if(!isAgg() && c.name!==curCase) return;
-    c.rows.forEach(function(r){ out.push({sc:c.name,seg:c.seg,date:r[0],time:r[1],title:r[2],media:r[3],status:r[4],editor:r[5],draft:r[6]||''}); });
+    c.rows.forEach(function(r){ out.push({sc:c.name,seg:c.seg,date:r[0],time:r[1],title:r[2],media:r[3],status:r[4],editor:r[5],draft:r[6]||'',links:r[7]||[]}); });
   });
   return out;
 }
@@ -412,10 +416,10 @@ function renderSchoolDetail(){
   up.sort(function(a,b){ return a[0]-b[0]; });
   var rows=up.slice(0,20).map(function(x){ var d=x[0], r=x[1];
     return '<div class="fixrow"><span class="tc num">'+(d.getMonth()+1)+'/'+d.getDate()+(r[1]?' '+esc(r[1]):'')+'</span>'+
-      '<div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+(r[5]?'<small>／ '+esc(r[5])+'</small>':'')+(r[6]&&r[6]!==r[0]?'<small>／ 初稿 '+esc(r[6])+'</small>':'')+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
+      '<div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+(r[5]?'<small>／ '+esc(r[5])+'</small>':'')+(r[6]&&r[6]!==r[0]?'<small>／ 初稿 '+esc(r[6])+'</small>':'')+linkChips(r[7])+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
   }).join('');
   var undRows=und.map(function(r){
-    return '<div class="fixrow"><span class="tc">未定</span><div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
+    return '<div class="fixrow"><span class="tc">未定</span><div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+linkChips(r[7])+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
   }).join('');
   var schedHtml='<div class="panel" style="padding:12px 16px">'+
     (rows||'<p class="note" style="margin:4px 0">今後の投稿予定はまだ入っていません。</p>')+undRows+
@@ -471,7 +475,7 @@ function calHtml(rows){
       var c=STATUS_COLORS[r.status]||'#e8ecf2';
       return '<div class="cent'+(r.status==='投稿済'?' done':'')+'" style="background:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+(r.draft?'・初稿'+esc(r.draft):'')+'）">'+
         '<span class="ct">'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
-        (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+'</span></div>';
+        (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+linkChips(r.links)+'</span></div>';
     }).join('');
     var dow=(first+d-1)%7;
     cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+((dow===0||dow===6)?' wk':'')+'"><span class="dnum">'+d+'</span>'+ents+'</div>';
@@ -494,7 +498,7 @@ function listHtml(rows){
     var ds=d?(d.getMonth()+1)+'/'+d.getDate()+'（'+'日月火水木金土'.charAt(d.getDay())+'）':'—';
     return '<tr><td class="num">'+ds+(r.time?' '+esc(r.time):'')+(r.draft&&r.draft!==r.date?'<div class="draftd">初稿 '+esc(r.draft)+'</div>':'')+'</td>'+
       (isAgg()?'<td><span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span></td>':'')+
-      '<td class="wr">'+esc(r.title)+'</td><td>'+mediaBadge(r.media)+'</td><td>'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+stag(r.status)+'</td><td>'+esc(r.editor||'')+'</td></tr>';}
+      '<td class="wr">'+esc(r.title)+linkChips(r.links)+'</td><td>'+mediaBadge(r.media)+'</td><td>'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+stag(r.status)+'</td><td>'+esc(r.editor||'')+'</td></tr>';}
   function sec(title,arr){if(!arr.length)return '';
     return '<div class="grp-h2">'+title+'</div><div class="tbl-scroll"><table><thead><tr><th>投稿日</th>'+
       (isAgg()?'<th>案件</th>':'')+'<th>コンテンツ</th><th>媒体</th><th>状況</th><th>担当</th></tr></thead><tbody>'+arr.map(tr).join('')+'</tbody></table></div>';}

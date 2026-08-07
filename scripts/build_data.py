@@ -73,13 +73,33 @@ def parse_md(s):
         return None
 
 
+def link_label(h):
+    h = h.replace("\n", "").strip()
+    if "完パケ" in h:
+        return "完パケ"
+    l = h.replace("投稿リンク", "")
+    l = l.strip("（）() 　").replace(" ", "").replace("＆", "/").replace("&", "/")
+    return l or "リンク"
+
+
+def detect_link_cols(rows):
+    """ヘッダー行（「状況」を含む先頭5行）からリンク系列（投稿リンク・完パケ）の列位置を検出"""
+    for r in rows[:5]:
+        cells = [(c if isinstance(c, str) else str(c)).strip() for c in r]
+        if "状況" in cells:
+            return [(i, link_label(c)) for i, c in enumerate(cells)
+                    if ("リンク" in c or "完パケ" in c) and "キャプション" not in c]
+    return []
+
+
 def build_sched():
-    ranges = [f"'{t[2]}'!A1:K500" for t in SCHED_TABS]
+    ranges = [f"'{t[2]}'!A1:P500" for t in SCHED_TABS]
     tabs = fetch(SCHED_ID, ranges)
     lo, hi = TODAY - timedelta(days=7), TODAY + timedelta(days=80)
     out = []
     for (name, seg, _tab, layout), rows in zip(SCHED_TABS, tabs):
         items = []
+        lcols = detect_link_cols(rows)
         for r in rows:
             if not r:
                 continue
@@ -111,11 +131,14 @@ def build_sched():
                     continue
                 date = ""
             title = title.replace("\n", " ")[:60]
-            row = [date, time, title, media, status, editor]
+            links = []
+            for ci, lb in lcols:
+                v = cell(r, ci)
+                if v.startswith("http"):
+                    links.append([lb, v])
             drv = parse_md(draft)
-            if drv and draft != date and lo <= drv <= hi:
-                row.append(draft)
-            items.append(row)
+            d_out = draft if (drv and draft != date and lo <= drv <= hi) else ""
+            items.append([date, time, title, media, status, editor, d_out, links])
             if len(items) >= 250:
                 break
         out.append({"name": name, "seg": seg, "rows": items})
