@@ -103,9 +103,10 @@
   .kcard .kh2{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .kcard .knm{font-size:15px;font-weight:800;letter-spacing:-.01em;}
   .kcard .kov{margin-left:auto;font-family:var(--mono);font-size:21px;font-weight:750;letter-spacing:-.02em;}
-  .krow2{display:flex;gap:9px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--border);font-size:12px;}
+  .krow2{display:flex;flex-wrap:wrap;gap:3px 9px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--border);font-size:12px;}
   .krow2:last-child{border-bottom:none;}
-  .krow2 .kn2{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);font-weight:600;}
+  .krow2 .kn2{flex:1 0 100%;min-width:0;white-space:normal;line-height:1.35;color:var(--ink-2);font-weight:600;}
+  .krow2 .kbar{flex:1 1 64px;width:auto;}
   .krow2 .kn2.cv{color:var(--accent-ink);font-weight:800;}
   .krow2 .kv2{font-family:var(--mono);font-size:11.5px;color:var(--ink);white-space:nowrap;}
   .krow2 .kv2 b{font-size:13.5px;}
