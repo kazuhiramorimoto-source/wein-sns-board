@@ -185,8 +185,8 @@ def build_kpi():
             t, pace, act = num(cell(r, 1)), num(cell(r, 2)), num(cell(r, 3))
             if t is None and pace is None and act is None:
                 continue
-            if t is None and not act:
-                continue   # 目標未設定かつ実績なし（計測開始前の②行など）はボードに出さない
+            if not t and not act:
+                continue   # 目標未設定/0かつ実績なし（計測開始前の②行など）はボードに出さない
             cur["kpis"].append([clean_kpi_name(a), t, pace, act])
     return basis, [cases[n] for n in KPI_ORDER if n in cases]
 
