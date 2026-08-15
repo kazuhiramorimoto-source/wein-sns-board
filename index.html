@@ -103,18 +103,24 @@
   .kcard .kh2{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .kcard .knm{font-size:15px;font-weight:800;letter-spacing:-.01em;}
   .kcard .kov{margin-left:auto;font-family:var(--mono);font-size:21px;font-weight:750;letter-spacing:-.02em;}
-  .krow2{display:flex;flex-wrap:wrap;gap:3px 9px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--border);font-size:12px;}
+  .krow2{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border);font-size:12.5px;}
   .krow2:last-child{border-bottom:none;}
   .krow2 .kn2{flex:1 0 100%;min-width:0;white-space:normal;line-height:1.35;color:var(--ink-2);font-weight:600;}
   .krow2 .kbar{flex:1 1 64px;width:auto;}
   .krow2 .kn2.cv{color:var(--accent-ink);font-weight:800;}
   .krow2 .kv2{font-family:var(--mono);font-size:11.5px;color:var(--ink);white-space:nowrap;}
-  .krow2 .kv2 b{font-size:13.5px;}
+  .krow2 .kv2 b{font-size:15px;letter-spacing:-.01em;}
   .krow2 .kv2 .tgt{color:var(--ink-3);font-size:10px;}
-  .kbar{width:64px;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden;flex:none;}
-  .kbar i{display:block;height:100%;border-radius:3px;}
+  .kbar{width:64px;height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden;flex:none;}
+  .kbar i{display:block;height:100%;border-radius:4px;}
   .b-good{background:var(--good)} .b-warn{background:var(--warn)} .b-bad{background:var(--bad)} .b-none{background:var(--ink-3)}
-  .krow2 .kp2{font-family:var(--mono);font-size:12.5px;font-weight:800;min-width:52px;text-align:right;flex:none;}
+  .krow2 .kp2{font-family:var(--mono);font-size:12px;font-weight:800;min-width:54px;text-align:center;flex:none;padding:2.5px 8px;border-radius:999px;}
+  .krow2 .kp2.c-good{background:color-mix(in srgb,var(--good) 13%,transparent);}
+  .krow2 .kp2.c-warn{background:color-mix(in srgb,var(--warn) 16%,transparent);}
+  .krow2 .kp2.c-bad{background:color-mix(in srgb,var(--bad) 12%,transparent);}
+  .krow2 .kp2.c-none{background:var(--surface-3);}
+  .ksec{margin:12px 0 1px;font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--ink-3);}
+  .ksec+.krow2{border-top:none;}
   .kovwrap{margin-left:auto;text-align:right;flex:none;}
   .kovlbl{display:block;font-size:8.5px;font-weight:800;color:var(--ink-3);letter-spacing:.05em;}
   .c-good{color:var(--good-ink)} .c-warn{color:var(--warn-ink)} .c-bad{color:var(--bad-ink)} .c-none{color:var(--ink-3)}
@@ -179,10 +185,10 @@ h1{font-size:18px;}
 .grp-h2{font-size:12px;color:var(--ink-2);}
 td.wr{font-size:12.5px;}
 tbody tr:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, var(--surface) 45%);}
-.krow2{font-size:12.5px;padding:8px 0;}
-.krow2 .kv2 b{font-size:14.5px;}
+.krow2{font-size:13px;padding:9px 0;}
+.krow2 .kv2 b{font-size:16px;}
 .kbar{width:88px;height:8px;border-radius:4px;}
-.krow2 .kp2{font-size:13.5px;min-width:56px;}
+.krow2 .kp2{font-size:13px;min-width:58px;}
 .krow2.cvrow{background:var(--accent-soft);border-radius:8px;padding:8px 10px;border-bottom:none;margin:3px -4px;}
 .ovbar{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden;margin:2px 0 10px;}
 .ovbar i{display:block;height:100%;border-radius:3px;}
@@ -511,7 +517,7 @@ function listHtml(rows){
 function numv(x){ return (x===null||x===undefined||x==='')?null:+x; }
 function kst(t,pace,a){ if(t===null||t===0||a===null)return 'none'; if(!pace)return a>0?'good':'none'; var r=a/pace; return r>=1?'good':r>=0.6?'warn':'bad'; }
 function kpiCardHtml(c){
-  var pr=[];
+  var pr=[],lastG='';
   var rows=c.kpis.map(function(k){
     var t=numv(k[1]),pace=numv(k[2]),a=numv(k[3]);
     var st=kst(t,pace,a);
@@ -520,7 +526,10 @@ function kpiCardHtml(c){
     var w=ratio!==null?Math.min(Math.max(ratio*100,0),100):0;
     var isCv=/LINE|面談/.test(k[0]);
     var pct=ratio!==null?Math.round(ratio*100)+'%':'—';
-    return '<div class="krow2'+(isCv?' cvrow':'')+'"><span class="kn2'+(isCv?' cv':'')+'" title="月間目標 '+(t===null?'—':t.toLocaleString())+'">'+(isCv?'<span class="cvmark">CV</span>':'')+esc(k[0])+'</span>'+
+    var g=isCv?'CV':(/投稿本数/.test(k[0])?'投稿本数':(/再生|閲覧|インプレ|視聴/.test(k[0])?'再生・インプレッション':(/フォロワー|登録者/.test(k[0])?'フォロワー・登録':'')));
+    var hd=(g&&g!=='CV'&&g!==lastG)?'<div class="ksec">'+g+'</div>':'';
+    if(g)lastG=g;
+    return hd+'<div class="krow2'+(isCv?' cvrow':'')+'"><span class="kn2'+(isCv?' cv':'')+'" title="月間目標 '+(t===null?'—':t.toLocaleString())+'">'+(isCv?'<span class="cvmark">CV</span>':'')+esc(k[0])+'</span>'+
       '<span class="kv2"><b>'+(a===null?'—':a.toLocaleString())+'</b><span class="tgt"> /月間 '+(t===null?'—':t.toLocaleString())+'</span></span>'+
       '<span class="kbar"><i class="b-'+st+'" style="width:'+w+'%"></i></span><span class="kp2 c-'+st+'">'+pct+'</span></div>';
   }).join('');
