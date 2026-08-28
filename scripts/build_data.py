@@ -25,7 +25,7 @@ SCHED_TABS = [
     ("LASTCALL", "talent", "LASTCALL", "no"),
     ("星乃リア", "talent", "星乃リアさん運用", "std"),
     ("ねぶたちゃん", "talent", "ねぶたちゃん運用", "std"),
-    ("橋本さん", "talent", "橋本さん運用", "std"),
+    # ("橋本さん", "talent", "橋本さん運用", "std"),  # 2026-08-28 森本指示: 8月で運用終了のためボードから除外（再開時はコメント解除）
 ]
 KPI_NAME_MAP = {"RVA": "RVA", "MERISE": "MERISE", "CREATOR'ZZ": "CREATOR'ZZ", "HERO'ZZ": "HERO'ZZ",
                 "AI＋": "AI+", "AI+": "AI+", "REAL VALUE": "REAL VALUE", "LASTCALL": "LASTCALL",
