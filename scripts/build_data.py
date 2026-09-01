@@ -31,7 +31,7 @@ KPI_NAME_MAP = {"RVA": "RVA", "MERISE": "MERISE", "CREATOR'ZZ": "CREATOR'ZZ", "H
                 "AI＋": "AI+", "AI+": "AI+", "REAL VALUE": "REAL VALUE", "LASTCALL": "LASTCALL",
                 "星野リア": "星乃リア", "溝口勇児": "溝口勇児"}
 KPI_ORDER = ["HERO'ZZ", "CREATOR'ZZ", "RVA", "AI+", "MERISE",
-             "REAL VALUE", "LASTCALL", "星乃リア", "溝口勇児"]
+             "REAL VALUE", "LASTCALL", "星乃リア", "ねぶたちゃん", "溝口勇児"]
 OWNERS = set("森 武本 平松 川崎 川ｻ崎 小笠原 松崎 黒河 朝岡 稲垣 武田 平山".split())
 ACTIVE = {"撮影", "編集", "修正中", "社内確認中", "納品", "企画/台本"}
 SEG_SCHOOL = {"HERO'ZZ", "CREATOR'ZZ", "RVA", "AI+", "MERISE"}
