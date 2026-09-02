@@ -371,6 +371,45 @@ footer{font-size:10.5px;}
 /* 一覧カードも間延びしないよう列幅を固定寄りに */
 .sgrid{grid-template-columns:repeat(auto-fill,minmax(238px,1fr));}
 .kgrid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));}
+
+/* ---- v19: カレンダーを「本物のカレンダー」に ---- */
+.layout{max-width:1420px;}
+body.wideview .wrap{max-width:1200px;}
+
+.calhead{padding:14px 18px;gap:12px;}
+.calhead .cm{font-size:17px;font-weight:800;min-width:132px;letter-spacing:-.01em;}
+.cal{min-width:1010px;}
+.cal .ch{padding:9px 0;font-size:10px;letter-spacing:.18em;}
+
+/* min-width:0 が無いとグリッドのマスが「折り返さないタイトル」の幅まで広がり、
+   カレンダー全体が横にはみ出して金・土が切れる */
+.cday{min-height:104px;padding:7px 6px 8px;display:flex;flex-direction:column;gap:3px;cursor:pointer;min-width:0;}
+.cday>*{min-width:0;max-width:100%;}
+.cent{min-width:0;}
+.cday.out{cursor:default;}
+.cday .dhead{display:flex;align-items:center;gap:4px;margin-bottom:2px;}
+.cday .dnum{font-size:12.5px;font-weight:800;color:var(--ink-2);width:23px;height:23px;}
+.cday .dcnt{margin-left:auto;font-size:9px;font-weight:800;color:var(--ink-3);letter-spacing:.03em;padding-right:2px;}
+.cday.sel{box-shadow:inset 0 0 0 2px var(--accent);}
+.cday.sel.today{box-shadow:inset 0 0 0 2px var(--accent),inset 0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent);}
+
+/* イベントチップ＝1行・省略記号。詳細は日付クリックで下に開く */
+.cent{margin-top:0;padding:4px 7px 4px 7px;border-radius:6px;border-left:3px solid transparent;}
+.cent .ct{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;line-height:1.6;}
+.cent .ctime{font-family:"Inter",var(--mono);font-size:10px;font-weight:800;opacity:.7;margin-right:4px;}
+.cmore{border:none;background:transparent;color:var(--ink-2);font-size:10.5px;font-weight:800;
+  padding:2px 6px;border-radius:6px;text-align:left;width:100%;}
+.cmore:hover{background:var(--surface-3);color:var(--ink);}
+
+/* 選択日の詳細パネル */
+.dayp{margin-top:14px;}
+.dayp .dph{display:flex;align-items:baseline;gap:10px;padding:13px 18px 4px;}
+.dayp .dpd{font-size:16px;font-weight:800;letter-spacing:-.01em;}
+.dayp .dpn{font-size:11px;color:var(--ink-3);font-weight:700;}
+.dayp .fixrow{padding:9px 18px;}
+.dayp .fixrow:last-child{border-bottom:none;}
+.dayp .close{margin-left:auto;}
+.dpempty{padding:6px 18px 16px;}
 </style>
 </head>
 <body>
@@ -414,7 +453,7 @@ function logoTile(name,h,seg,w){
 B.sched.forEach(function(c){ if(!c.seg) c.seg = SCHOOL_SET[c.name]?'school':'talent'; });
 var curTab='schools', schedMode='cal', curCase='ALL', kpiSeg='all', curSchool=null;
 var kpiView='card', kpiFilter='', kpiSort='asc';
-var calCur=null;
+var calCur=null, daySel=null;
 var INF=(B.infoma&&B.infoma.air)?B.infoma:{air:[],prog:[]};
 var infShow=true, infCase='ALL';
 var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3',
@@ -461,6 +500,7 @@ function render(){
   $('subline').textContent = B.updated+' 時点のスナップショット';
   var tabs=[{k:'schools',l:IC.school+'スクール'},{k:'sched',l:IC.cal+'スケジュール'},{k:'infoma',l:IC.tv+'インフォマ'},{k:'kpi',l:IC.chart+'KPI進捗'}];
   $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="'+(curTab===t.k?'on':'')+'" onclick="goTab(\''+t.k+'\')">'+t.l+'</button>';}).join('');
+  if(document.body&&document.body.classList) document.body.classList.toggle('wideview',curTab==='sched');
   renderSide();
   if(curTab==='schools') renderSchools();
   else if(curTab==='sched') renderSched();
@@ -604,8 +644,8 @@ function cvTiles(kc){
 }
 
 function setCase(i){ curCase = (i==='ALL'||i==='SCHOOL'||i==='TALENT')?i:B.sched[i].name; renderSched(); }
-function calShift(n){ calCur.m+=n; if(calCur.m<0){calCur.m=11;calCur.y--;} if(calCur.m>11){calCur.m=0;calCur.y++;} renderSched(); }
-function calToday(){ var t=new Date(); calCur={y:t.getFullYear(),m:t.getMonth()}; renderSched(); }
+function calShift(n){ calCur.m+=n; if(calCur.m<0){calCur.m=11;calCur.y--;} if(calCur.m>11){calCur.m=0;calCur.y++;} daySel=null; renderSched(); }
+function calToday(){ var t=new Date(); calCur={y:t.getFullYear(),m:t.getMonth()}; daySel=null; renderSched(); }
 
 function renderSched(){
   if(!calCur){ var t=new Date(); calCur={y:B.year,m:t.getMonth()}; }
@@ -622,48 +662,121 @@ function renderSched(){
   var infBtn='<span class="switch"><button type="button" class="tl'+(infShow?' on':'')+'" onclick="infShow=!infShow;renderSched()">'+IC.tv+'インフォマ放送 '+(infShow?'表示中':'非表示')+'</button></span>';
   var rows=allRows();
   var body = schedMode==='cal' ? calHtml(rows) : (listHtml(rows)+(infShow?infListHtml():''));
+  var dayp = schedMode==='cal' ? dayPanelHtml(rows) : '';
   $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+infBtn+'</div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+'<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">色＝制作状況</span>'+
-    '<span class="stag" style="background:#DDEBF7">企画/台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3"><span class="dmk half" style="margin-right:4px"></span>納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060"><span class="dmk" style="margin-right:4px"></span>投稿済=完了</span><span class="stag" style="background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2)"><span class="dlabel" style="margin-right:4px">初稿</span>点線＝初稿締切</span><span class="stag" style="background:#F6EEFF;box-shadow:inset 0 0 0 1.5px #a855f7;color:#4c1d95"><span class="ibadge" style="margin-right:4px">放送</span>紫枠＝インフォマ放送</span></div>'+body+'</div>'+
-    '<p class="note">チップの色は運用スケジュールシートの「状況」と同じ色です。紫枠は「スクール×インフォマ管理シート」の放送カレンダーです。</p>';
+    '<span class="stag" style="background:#DDEBF7">企画/台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3"><span class="dmk half" style="margin-right:4px"></span>納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060"><span class="dmk" style="margin-right:4px"></span>投稿済=完了</span><span class="stag" style="background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2)"><span class="dlabel" style="margin-right:4px">初稿</span>点線＝初稿締切</span><span class="stag" style="background:#F6EEFF;box-shadow:inset 0 0 0 1.5px #a855f7;color:#4c1d95"><span class="ibadge" style="margin-right:4px">放送</span>紫枠＝インフォマ放送</span></div>'+body+'</div>'+dayp+
+    '<p class="note">チップの<b>塗り色＝制作状況</b>（運用スケジュールシートの「状況」と同じ色）、<b>左端の縦線＝スクール／案件</b>の色です。<br>'+
+    'カレンダーのマスは1件1行で表示し、<b>日付をクリックすると担当・媒体・投稿リンクまで含めた詳細</b>がその下に開きます（4件以上の日は「＋ほか◯件」）。</p>';
 }
 
+var SCHOOL_COLORS={"HERO'ZZ":'#990000',"CREATOR'ZZ":'#1C4587','RVA':'#B45F06','AI+':'#38761D','MERISE':'#351C75',
+ 'REAL VALUE':'#0891b2','LASTCALL':'#111827','星乃リア':'#db2777','ねぶたちゃん':'#0d9488','溝口勇児':'#4b5563'};
+function scColor(n){ return SCHOOL_COLORS[n]||'#7c5cf0'; }
+var MAXCHIP=4;
+
+/* 日付キーごとに、その日の予定（投稿・初稿締切・インフォマ放送）を集める */
+function dayBuckets(rows,y,m){
+  var by={};
+  function push(d,o){ if(d&&d.getFullYear()===y&&d.getMonth()===m)(by[d.getDate()]=by[d.getDate()]||[]).push(o); }
+  rows.forEach(function(r){ push(pd(r.date),{k:'post',r:r}); });
+  rows.forEach(function(r){ if(r.draft&&r.draft!==r.date) push(pd(r.draft),{k:'draft',r:r}); });
+  if(infShow) infFiltered().forEach(function(a){ push(pd(a[0]),{k:'inf',a:a}); });
+  var rank={inf:0,post:1,draft:2};
+  Object.keys(by).forEach(function(d){
+    by[d].sort(function(a,b){
+      if(rank[a.k]!==rank[b.k]) return rank[a.k]-rank[b.k];
+      var ta=(a.r&&a.r.time)||'', tb=(b.r&&b.r.time)||'';
+      if(!ta&&tb) return 1; if(ta&&!tb) return -1;
+      return ta<tb?-1:ta>tb?1:0;
+    });
+  });
+  return by;
+}
+function timeChip(t){
+  t=String(t||'').trim();
+  if(/^\d{1,2}$/.test(t)) return t+':00';
+  if(/^\d{1,2}:\d{2}$/.test(t)) return t;
+  if(/^\d{1,2}時$/.test(t)) return t.replace('時','')+':00';
+  return '';   /* 「8/27確定予定」のような時刻以外のメモはチップに出さず詳細パネルで見せる */
+}
+function chipHtml(e){
+  if(e.k==='inf'){
+    return '<div class="cent infm" style="border-left-color:'+scColor(e.a[1])+'" title="インフォマ放送：'+esc(e.a[2])+'（'+esc(e.a[1])+'）">'+
+      '<span class="ct"><span class="ibadge">放送</span>'+esc(e.a[2])+'</span></div>';
+  }
+  var r=e.r;
+  if(e.k==='draft'){
+    return '<div class="cent draft" style="border-left-color:'+scColor(r.sc)+'" title="初稿締切：'+esc(r.title)+'（'+esc(r.sc)+'・投稿予定 '+esc(r.date)+'）">'+
+      '<span class="ct"><span class="dlabel">初稿</span>'+esc(r.title)+'</span></div>';
+  }
+  var c=STATUS_COLORS[r.status]||'#e8ecf2';
+  return '<div class="cent'+(r.status==='投稿済'?' done':'')+'" style="background:'+c+';border-left-color:'+scColor(r.sc)+'" '+
+    'title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.media?'・'+esc(r.media):'')+(r.editor?'・'+esc(r.editor):'')+'）">'+
+    '<span class="ct">'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+
+    (timeChip(r.time)?'<span class="ctime">'+esc(timeChip(r.time))+'</span>':'')+esc(r.title)+'</span></div>';
+}
 function calHtml(rows){
-  var y=calCur.y,m=calCur.m,byDay={};
-  rows.forEach(function(r){var d=pd(r.date);if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({g:false,r:r});}});
-  rows.forEach(function(r){ if(!r.draft||r.draft===r.date) return; var d=pd(r.draft); if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({g:true,r:r});} });
-  if(infShow) infFiltered().forEach(function(a){ var d=pd(a[0]); if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({inf:a});} });
+  var y=calCur.y,m=calCur.m;
+  var by=dayBuckets(rows,y,m);
   var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
   var tnow=new Date(),thisMonth=tnow.getFullYear()===y&&tnow.getMonth()===m;
   var cells='';
   ['日','月','火','水','木','金','土'].forEach(function(w,i){cells+='<div class="ch'+(i===0?' sun':i===6?' sat':'')+'">'+w+'</div>';});
   for(var i=0;i<first;i++)cells+='<div class="cday out"></div>';
   for(var d=1;d<=days;d++){
-    var ents=(byDay[d]||[]).map(function(e){
-      var r=e.r;
-      if(e.inf){
-        return '<div class="cent infm" title="インフォマ放送：'+esc(e.inf[2])+'（'+esc(e.inf[1])+'）">'+
-          '<span class="ct"><span class="ibadge">放送</span>'+
-          (isAgg()?'<span class="sctag tl">'+esc(e.inf[1])+'</span> ':'')+esc(e.inf[2])+'</span></div>';
-      }
-      if(e.g){
-        return '<div class="cent draft" title="初稿締切：'+esc(r.title)+'（'+esc(r.sc)+'・投稿予定 '+esc(r.date)+'）">'+
-          '<span class="ct"><span class="dlabel">初稿</span>'+
-          (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+esc(r.title)+'</span></div>';
-      }
-      var c=STATUS_COLORS[r.status]||'#e8ecf2';
-      return '<div class="cent'+(r.status==='投稿済'?' done':'')+'" style="background:'+c+'" title="'+esc(r.title)+'（'+esc(r.sc)+'・'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+(r.draft?'・初稿'+esc(r.draft):'')+'）">'+
-        '<span class="ct">'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+(r.time?'<b class="num">'+esc(r.time)+'</b> ':'')+
-        (isAgg()?'<span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> ':'')+mediaBadge(r.media)+' '+esc(r.title)+linkChips(r.links)+'</span></div>';
-    }).join('');
+    var list=by[d]||[];
+    var shown=list.slice(0,MAXCHIP).map(chipHtml).join('');
+    var over=list.length-MAXCHIP;
+    var key=y+'-'+m+'-'+d;
     var dow=(first+d-1)%7;
-    cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+((dow===0||dow===6)?' wk':'')+'"><span class="dnum">'+d+'</span>'+ents+'</div>';
+    cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+((dow===0||dow===6)?' wk':'')+
+      (daySel===key?' sel':'')+'" onclick="selDay(\''+key+'\')">'+
+      '<div class="dhead"><span class="dnum">'+d+'</span>'+
+      (list.length?'<span class="dcnt">'+list.length+'件</span>':'')+'</div>'+
+      shown+(over>0?'<button type="button" class="cmore">＋ほか '+over+'件</button>':'')+'</div>';
   }
   var rem=(first+days)%7; if(rem)for(var j=rem;j<7;j++)cells+='<div class="cday out"></div>';
   return '<div class="calhead"><button class="btn" type="button" onclick="calShift(-1)">'+IC.chevL+'前月</button><span class="cm">'+y+'年'+(m+1)+'月</span>'+
-    '<button class="btn" type="button" onclick="calShift(1)">翌月'+IC.chevR+'</button><button class="btn" type="button" onclick="calToday()">今日</button></div>'+
+    '<button class="btn" type="button" onclick="calShift(1)">翌月'+IC.chevR+'</button><button class="btn" type="button" onclick="calToday()">今日</button>'+
+    '<span class="spacer"></span><span class="note" style="margin:0">日付をクリックするとその日の詳細が下に開きます</span></div>'+
     '<div class="calwrap"><div class="cal">'+cells+'</div></div>';
+}
+function selDay(k){ daySel=(daySel===k?null:k); renderSched();
+  if(daySel){ var el=document.getElementById('dayp'); if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest'}); } }
+function dayPanelHtml(rows){
+  if(!daySel) return '';
+  var p=daySel.split('-'),y=+p[0],m=+p[1],d=+p[2];
+  if(m!==calCur.m||y!==calCur.y) return '';
+  var list=(dayBuckets(rows,y,m)[d])||[];
+  var dt=new Date(y,m,d);
+  var head='<div class="dph"><span class="dpd">'+(m+1)+'月'+d+'日（'+'日月火水木金土'.charAt(dt.getDay())+'）</span>'+
+    '<span class="dpn">'+(list.length?list.length+'件':'予定なし')+'</span>'+
+    '<button class="btn close" type="button" onclick="selDay(\''+daySel+'\')">閉じる</button></div>';
+  if(!list.length) return '<div class="panel dayp" id="dayp">'+head+'<p class="note dpempty">この日の予定は入っていません。</p></div>';
+  var body=list.map(function(e){
+    if(e.k==='inf'){
+      return '<div class="fixrow inf"><span class="tc">放送</span>'+
+        '<div class="fx"><span class="sctag tl">'+esc(e.a[1])+'</span> '+esc(e.a[2])+'</div>'+
+        '<span class="ibadge">インフォマ</span></div>';
+    }
+    var r=e.r;
+    if(e.k==='draft'){
+      return '<div class="fixrow"><span class="tc">初稿締切</span>'+
+        '<div class="fx"><span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> '+mediaBadge(r.media)+' '+esc(r.title)+
+        '<small>／投稿予定 '+esc(r.date)+'</small></div>'+(r.status?stag(r.status):'')+'</div>';
+    }
+    var tc=timeChip(r.time);
+    return '<div class="fixrow"><span class="tc num">'+esc(tc||'時刻未定')+'</span>'+
+      '<div class="fx"><span class="sctag'+(r.seg==='talent'?' tl':'')+'">'+esc(r.sc)+'</span> '+mediaBadge(r.media)+' '+esc(r.title)+
+      (!tc&&r.time?'<small>／'+esc(r.time)+'</small>':'')+
+      (r.editor?'<small>／'+esc(r.editor)+'</small>':'')+
+      (r.draft&&r.draft!==r.date?'<small>／初稿 '+esc(r.draft)+'</small>':'')+linkChips(r.links)+'</div>'+
+      (r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+
+      (r.status?stag(r.status):'')+'</div>';
+  }).join('');
+  return '<div class="panel dayp" id="dayp">'+head+body+'</div>';
 }
 
 function listHtml(rows){
