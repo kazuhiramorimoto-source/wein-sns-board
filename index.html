@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="logos/wein-mark.svg">
+<link rel="apple-touch-icon" href="logos/wein-mark.svg">
+<meta name="theme-color" content="#7c5cf0">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
 <title>WEIN スクール横串オーガニック｜スケジュール & KPI進捗</title>
@@ -340,6 +343,34 @@ footer{font-size:10.5px;}
   .cent.infm .ct{color:#e9d5ff;}
   .fixrow.inf .tc{color:#d8b4fe;background:#2d1b45;}
 }
+/* ---- v18: ロゴ＋レイアウトの伸び止め ---- */
+.brand{display:inline-flex;align-items:center;gap:9px;border:none;background:transparent;padding:0;text-decoration:none;color:inherit;}
+.bmark{display:block;border-radius:9px;box-shadow:0 2px 9px rgba(99,82,230,.34);flex:none;}
+.bname{font-family:"Inter",var(--sans);font-size:12.5px;font-weight:800;letter-spacing:.2em;color:var(--ink);}
+.sidebrand{gap:10px;padding:2px 6px 14px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.sidebrand .bt{color:var(--ink);}
+
+/* 横伸び対策：中身の少ないブロックが画面幅いっぱいに間延びしないよう上限を持たせる */
+.layout{max-width:1340px;}
+.wrap{max-width:1100px;padding:20px 24px 56px;}
+#side{background:color-mix(in srgb,var(--surface) 55%,transparent);}
+.ktiles{display:flex;flex-wrap:wrap;gap:10px;}
+.kt{flex:1 1 158px;max-width:228px;}
+.sec-h3{margin:20px 0 9px;}
+.cbox .cb,.cbox.hero .cb{max-width:80ch;}
+.mrow span{max-width:74ch;}
+.fband{max-width:none;}
+.note{max-width:88ch;}
+
+/* スクール詳細＝広い画面では2カラム（縦に伸びすぎるのを止める） */
+.detgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:0 20px;align-items:start;}
+.detgrid .dcol{min-width:0;}
+.detgrid .sec-h3:first-child{margin-top:14px;}
+@media (max-width:1240px){ .detgrid{grid-template-columns:minmax(0,1fr);} }
+
+/* 一覧カードも間延びしないよう列幅を固定寄りに */
+.sgrid{grid-template-columns:repeat(auto-fill,minmax(238px,1fr));}
+.kgrid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));}
 </style>
 </head>
 <body>
@@ -347,7 +378,10 @@ footer{font-size:10.5px;}
 <aside id="side"></aside>
 <div class="wrap">
   <header>
-    <span class="badge">WEIN</span>
+    <button type="button" class="brand" onclick="goTab('schools')" title="ホームへ">
+      <img class="bmark" src="logos/wein-mark.svg" alt="WEIN" width="30" height="30">
+      <span class="bname">WEIN</span>
+    </button>
     <div><h1>スクール横串オーガニック｜スケジュール & KPI進捗</h1><div class="sub" id="subline"></div></div>
     <div class="spacer"></div>
     <span class="pill p-done"><span class="d"></span>閲覧用ボード</span>
@@ -438,7 +472,8 @@ function goSchool(n){ curTab='schools'; curSchool=n; render(); window.scrollTo(0
 function renderSide(){
   var el=$('side'); if(!el) return;
   function nb(on,click,inner){ return '<button type="button" class="'+(on?'on':'')+'" onclick="'+click+'">'+inner+'</button>'; }
-  var h='<div class="sidebrand"><span class="badge">WEIN</span><span class="bt">スクール横串<br>オーガニック</span></div>';
+  var h='<div class="sidebrand"><img class="bmark" src="logos/wein-mark.svg" alt="WEIN" width="30" height="30">'+
+    '<span class="bt">スクール横串<br>オーガニック</span></div>';
   h+='<div class="snav"><div class="nl">メニュー</div>'+
     nb(curTab==='schools'&&!curSchool,"goTab('schools')",IC.school+'<span class="tx">スクールハブ</span>')+
     nb(curTab==='sched',"goTab('sched')",IC.cal+'<span class="tx">スケジュール</span>')+
@@ -546,9 +581,11 @@ function renderSchoolDetail(){
       }).join(''):'')+'</div>';
   }
   $('view').innerHTML=head+cvTiles(kc)+
-    sh3('KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+
-    sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml+
-    (infHtml?sh3('インフォマ — 放送予定・台本/配信の進行')+infHtml:'')+
+    '<div class="detgrid">'+
+      '<div class="dcol">'+sh3('KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+'</div>'+
+      '<div class="dcol">'+sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml+
+        (infHtml?sh3('インフォマ — 放送予定・台本/配信の進行')+infHtml:'')+'</div>'+
+    '</div>'+
     sh3('コンセプト設計')+conceptHtml;
 }
 function cvTiles(kc){
