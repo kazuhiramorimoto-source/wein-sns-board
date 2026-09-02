@@ -284,6 +284,16 @@ footer{font-size:10.5px;}
     var(--bg);}
   .panel{box-shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 34px rgba(0,0,0,.35);}
 }
+/* ---- v14: school hub clarity ---- */
+.steaser.tzr{color:var(--ink-2);font-weight:700;font-size:11.5px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:10px;}
+.cbox.full{grid-column:1/-1;}
+.cbox.hero{border-left:4px solid var(--accent);background:linear-gradient(135deg,color-mix(in srgb,var(--accent-soft) 55%,var(--surface)) 0%,var(--surface) 70%);}
+.cbox.hero .cb{font-size:15px;line-height:2;}
+.mrow{display:flex;gap:12px;padding:6.5px 0;border-bottom:1px dashed var(--border);font-size:12.5px;line-height:1.75;}
+.mrow:last-child{border-bottom:none;}
+.mrow b{flex:none;width:132px;color:var(--accent-ink);font-weight:800;}
+.mrow span{flex:1;min-width:0;color:var(--ink);font-weight:600;}
+@media (max-width:600px){ .mrow{flex-direction:column;gap:2px;} .mrow b{width:auto;} }
 </style>
 </head>
 <body>
@@ -387,8 +397,11 @@ function renderSchools(){
     var pace=schoolAch(kc), month=schoolMonthAch(kc);
     var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
     var up=c.rows.filter(function(r){ var d=pd(r[0]); return d&&d>=t0; }).length;
+    var con=(B.concepts||{})[c.name];
+    var tz=con&&con.length?String(con[0][1]).split('。')[0]:'';
     return '<div class="scard '+(c.seg==='talent'?'tl':'sc')+'" onclick="openSchoolIdx('+i+')"><div class="sn2">'+logoTile(c.name,34,c.seg,88)+esc(c.name)+
       '<span class="sctag'+(c.seg==='talent'?' tl':'')+'" style="margin-left:auto">'+(c.seg==='talent'?'非スクール':'スクール')+'</span></div>'+
+      (tz?'<div class="steaser tzr">'+esc(tz)+'</div>':'')+
       '<div class="statrow">'+
       '<span class="stat '+pst+'"><span class="sl">現時点達成率</span><span class="sv c-'+pst+'">'+(pace===null?'—':pace+'%')+'</span></span>'+
       '<span class="stat"><span class="sl">月間達成率</span><span class="sv" style="color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span></div>'+
@@ -413,7 +426,19 @@ function renderSchoolDetail(){
     '<span class="spacer"></span><button class="btn" type="button" onclick="openCal('+idx+')">'+IC.cal+'カレンダーで見る</button></div>';
   var conceptHtml=con.length
     ? '<div class="concept-g">'+con.map(function(c,i){
-        return '<div class="cbox'+(i===0?' hero':'')+'"><div class="ci">'+esc(c[0])+'</div><div class="cb">'+esc(c[1])+'</div></div>';
+        var lines=String(c[1]).split('\n');
+        var full=(lines.length>1)||String(c[1]).length>90;
+        var body;
+        if(i!==0&&lines.length>1){
+          body=lines.map(function(l){
+            var m=/^([^＝]{1,16})＝(.+)$/.exec(l);
+            return m?'<div class="mrow"><b>'+esc(m[1])+'</b><span>'+esc(m[2])+'</span></div>'
+                    :'<div class="mrow"><span>'+esc(l)+'</span></div>';
+          }).join('');
+        } else {
+          body='<div class="cb">'+esc(c[1])+'</div>';
+        }
+        return '<div class="cbox'+(i===0?' hero':(full?' full':''))+'"><div class="ci">'+esc(c[0])+'</div>'+body+'</div>';
       }).join('')+'</div>'
     : '<p class="note">この案件のコンセプト設計は準備中です。</p>';
   var kpiHtml=kc?'<div class="kgrid">'+kpiCardHtml(kc)+'</div>':'<p class="note">KPIは未設定です。</p>';
