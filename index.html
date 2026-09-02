@@ -401,6 +401,34 @@ body.wideview .wrap{max-width:1200px;}
   padding:2px 6px;border-radius:6px;text-align:left;width:100%;}
 .cmore:hover{background:var(--surface-3);color:var(--ink);}
 
+/* ---- v21: 予定リスト＝日付でまとめるアジェンダ表示 ---- */
+.agday{border-bottom:1px solid var(--border);}
+.agday:last-child{border-bottom:none;}
+.agdh{display:flex;align-items:baseline;gap:9px;padding:13px 0 6px;}
+.agdd{font-family:"Inter",var(--mono);font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.01em;}
+.agdw{font-size:11.5px;font-weight:800;color:var(--ink-3);}
+.agdh.sun .agdd,.agdh.sun .agdw{color:var(--bad-ink);}
+.agdh.sat .agdd,.agdh.sat .agdw{color:var(--accent-ink);}
+.agdn{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--ink-3);}
+.agtoday{font-size:9.5px;font-weight:800;background:var(--grad);color:#fff;padding:2px 8px;border-radius:999px;letter-spacing:.06em;}
+.agsoon{font-size:9.5px;font-weight:800;background:var(--warn-soft);color:var(--warn-ink);padding:2px 8px;border-radius:999px;}
+.agrow{display:flex;gap:12px;align-items:flex-start;padding:8px 0 9px 2px;}
+.agrow+.agrow{border-top:1px dashed var(--border);}
+.agtime{flex:none;width:46px;font-family:"Inter",var(--mono);font-size:13px;font-weight:800;color:var(--ink-2);padding-top:1px;}
+.agtime.none{color:var(--ink-3);font-size:11px;font-weight:700;}
+.agmain{flex:1;min-width:0;}
+.agt{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.55;}
+.agmeta{font-size:11.5px;color:var(--ink-2);font-weight:600;margin-top:3px;line-height:1.55;}
+.agmeta b{color:var(--ink-3);font-weight:800;font-size:10px;margin-right:4px;letter-spacing:.04em;}
+.agmeta .sep{color:var(--border-strong);margin:0 7px;}
+.agst{flex:none;display:flex;align-items:center;gap:6px;padding-top:1px;}
+
+/* 残りの fixrow も薄さ・小ささを解消 */
+.fixrow{font-size:13px;padding:9px 0;}
+.fixrow .fx{font-weight:700;line-height:1.55;}
+.fixrow .fx small{color:var(--ink-2);font-weight:600;}
+.fixrow .tc{font-size:11px;}
+
 /* 選択日の詳細パネル */
 .dayp{margin-top:14px;}
 .dayp .dph{display:flex;align-items:baseline;gap:10px;padding:13px 18px 4px;}
@@ -530,6 +558,38 @@ function renderSide(){
   el.innerHTML=h;
 }
 
+/* 予定リストを日付でまとめて並べる。items=[{d:Date,time,main,meta,right}]
+   time を省略（null/undefined）すると時刻カラムごと出さない（放送予定など） */
+function agendaHtml(items){
+  if(!items.length) return '';
+  var t0=new Date(); t0.setHours(0,0,0,0);
+  var cnt={};
+  function key(d){ return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); }
+  items.forEach(function(it){ cnt[key(it.d)]=(cnt[key(it.d)]||0)+1; });
+  var out='',last='';
+  items.forEach(function(it){
+    var k=key(it.d);
+    if(k!==last){
+      if(last) out+='</div></div>';
+      var wd=it.d.getDay(), diff=Math.round((it.d-t0)/86400000);
+      out+='<div class="agday"><div class="agdh'+(wd===0?' sun':wd===6?' sat':'')+'">'+
+        '<span class="agdd">'+(it.d.getMonth()+1)+'/'+it.d.getDate()+'</span>'+
+        '<span class="agdw">'+'日月火水木金土'.charAt(wd)+'</span>'+
+        (diff===0?'<span class="agtoday">今日</span>':diff===1?'<span class="agsoon">明日</span>':'')+
+        (cnt[k]>1?'<span class="agdn">'+cnt[k]+'件</span>':'')+
+        '</div><div class="agitems">';
+      last=k;
+    }
+    out+='<div class="agrow">'+
+      (it.time===null||it.time===undefined?'':'<span class="agtime'+(it.time?'':' none')+'">'+esc(it.time||'時刻未定')+'</span>')+
+      '<div class="agmain"><div class="agt">'+it.main+'</div>'+
+      (it.meta?'<div class="agmeta">'+it.meta+'</div>':'')+'</div>'+
+      (it.right?'<span class="agst">'+it.right+'</span>':'')+'</div>';
+  });
+  return out+'</div></div>';
+}
+function metaJoin(parts){ return parts.filter(Boolean).join('<span class="sep">·</span>'); }
+
 /* ---------- スクールハブ ---------- */
 function schoolKpi(name){ var hit=null; B.kpi.forEach(function(k){ if(k.name===name) hit=k; }); return hit; }
 function schoolAch(kc){ if(!kc) return null; var pr=[];
@@ -596,22 +656,28 @@ function renderSchoolDetail(){
   var up=[], und=[];
   sc.rows.forEach(function(r){ var d=pd(r[0]); if(!d){ und.push(r); return; } if(d>=t0) up.push([d,r]); });
   up.sort(function(a,b){ return a[0]-b[0]; });
-  var rows=up.slice(0,20).map(function(x){ var d=x[0], r=x[1];
-    return '<div class="fixrow"><span class="tc num">'+(d.getMonth()+1)+'/'+d.getDate()+(r[1]?' '+esc(r[1]):'')+'</span>'+
-      '<div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+(r[5]?'<small>／ '+esc(r[5])+'</small>':'')+(r[6]&&r[6]!==r[0]?'<small>／ 初稿 '+esc(r[6])+'</small>':'')+linkChips(r[7])+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
-  }).join('');
-  var undRows=und.map(function(r){
-    return '<div class="fixrow"><span class="tc">未定</span><div class="fx">'+mediaBadge(r[3])+' '+esc(r[2])+linkChips(r[7])+'</div>'+(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'')+'</div>';
-  }).join('');
-  var schedHtml='<div class="panel" style="padding:12px 16px">'+
-    (rows||'<p class="note" style="margin:4px 0">今後の投稿予定はまだ入っていません。</p>')+undRows+
-    (up.length>20?'<p class="note" style="margin:8px 0 0">ほか '+(up.length-20)+' 件は「カレンダーで見る」から。</p>':'')+'</div>';
+  var rows=agendaHtml(up.slice(0,12).map(function(x){ var d=x[0], r=x[1];
+    return { d:d, time:timeChip(r[1]),
+      main:mediaBadge(r[3])+' '+esc(r[2])+linkChips(r[7]),
+      meta:metaJoin([ r[5]?'<b>担当</b>'+esc(r[5]):'', (r[6]&&r[6]!==r[0])?'<b>初稿</b>'+esc(r[6]):'' ]),
+      right:(r[4]==='投稿済'?'<span class="dmk"></span>':r[4]==='納品'?'<span class="dmk half"></span>':'')+(r[4]?stag(r[4]):'') };
+  }));
+  var undRows=und.length?'<div class="agday"><div class="agdh"><span class="agdd" style="font-size:13px">日付未定</span>'+
+    '<span class="agdn">'+und.length+'件</span></div><div class="agitems">'+
+    und.map(function(r){
+      return '<div class="agrow"><div class="agmain"><div class="agt">'+mediaBadge(r[3])+' '+esc(r[2])+linkChips(r[7])+'</div>'+
+        (r[5]?'<div class="agmeta"><b>担当</b>'+esc(r[5])+'</div>':'')+'</div>'+
+        '<span class="agst">'+(r[4]?stag(r[4]):'')+'</span></div>';
+    }).join('')+'</div></div>':'';
+  var schedHtml='<div class="panel" style="padding:4px 16px 12px">'+
+    (rows||'<p class="note" style="margin:10px 0">今後の投稿予定はまだ入っていません。</p>')+undRows+
+    (up.length>12?'<p class="note" style="margin:10px 0 2px">ほか '+(up.length-12)+' 件は上の「カレンダーで見る」から。</p>':'')+'</div>';
   var infAir=infDated(INF.air.filter(function(a){ return a[1]===name; })).filter(function(x){ return x.d>=t0; });
   var infPr=INF.prog.filter(function(p){ return p[2]===name; });
   var infHtml='';
   if(infAir.length||infPr.length){
-    infHtml='<div class="panel" style="padding:6px 16px 12px">'+
-      (infAir.length?infAirList(infAir.slice(0,12)):'<p class="note" style="margin:8px 0">今後の放送予定はまだ入っていません。</p>')+
+    infHtml='<div class="panel" style="padding:4px 16px 12px">'+
+      (infAir.length?infAirList(infAir.slice(0,12),true):'<p class="note" style="margin:8px 0">今後の放送予定はまだ入っていません。</p>')+
       (infAir.length>12?'<p class="note" style="margin:6px 0 0">ほか '+(infAir.length-12)+' 件は「インフォマ」タブから。</p>':'')+
       (infPr.length?'<div class="grp-h2" style="padding:12px 0 4px">台本・配信の進行</div>'+infPr.map(function(p){
         return '<div class="fixrow"><span class="tc num">'+esc(p[3]||'未定')+'</span>'+
@@ -622,9 +688,9 @@ function renderSchoolDetail(){
   }
   $('view').innerHTML=head+cvTiles(kc)+
     '<div class="detgrid">'+
-      '<div class="dcol">'+sh3('KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+'</div>'+
-      '<div class="dcol">'+sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml+
+      '<div class="dcol">'+sh3('KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+
         (infHtml?sh3('インフォマ — 放送予定・台本/配信の進行')+infHtml:'')+'</div>'+
+      '<div class="dcol">'+sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml+'</div>'+
     '</div>'+
     sh3('コンセプト設計')+conceptHtml;
 }
@@ -810,15 +876,11 @@ function infDated(arr){
             .filter(function(x){ return x.d; })
             .sort(function(a,b){ return a.d-b.d; });
 }
-function infAirList(arr){
-  var out='',lastM='';
-  arr.forEach(function(x){
-    var mk=x.d.getFullYear()+'年'+(x.d.getMonth()+1)+'月';
-    if(mk!==lastM){ out+='<div class="grp-h2" style="padding:10px 0 4px">'+mk+'</div>'; lastM=mk; }
-    out+='<div class="fixrow inf"><span class="tc num">'+(x.d.getMonth()+1)+'/'+x.d.getDate()+'（'+'日月火水木金土'.charAt(x.d.getDay())+'）</span>'+
-      '<div class="fx"><span class="sctag tl">'+esc(x.s||'—')+'</span> '+esc(x.p)+'</div></div>';
-  });
-  return out;
+function infAirList(arr,hideSchool){
+  return agendaHtml(arr.map(function(x){
+    return { d:x.d, main:'<span class="ibadge">放送</span> '+esc(x.p),
+      right:hideSchool?'':'<span class="sctag tl">'+esc(x.s||'—')+'</span>' };
+  }));
 }
 function infListHtml(){
   var t0=new Date(); t0.setHours(0,0,0,0);
@@ -879,9 +941,9 @@ function renderInfoma(){
     '<div class="panel" style="margin-bottom:14px"><div class="bar">'+sw+
     '<span class="spacer"></span><span class="note" style="margin:0">スクール×インフォマ管理シート</span></div></div>'+
     sh3('放送予定 — 期日が近い順')+
-    '<div class="panel" style="padding:6px 16px 12px">'+(infAirList(up)||'<p class="note" style="margin:8px 0">今後の放送予定はまだ入っていません。</p>')+'</div>'+
+    '<div class="panel" style="padding:4px 16px 12px">'+(infAirList(up,infCase!=='ALL')||'<p class="note" style="margin:10px 0">今後の放送予定はまだ入っていません。</p>')+'</div>'+
     sh3('台本・配信の進行管理 — 遅れている順')+infProgTable(prog)+
-    (past.length?sh3('放送済み — 新しい順（'+past.length+'件）')+'<div class="panel" style="padding:6px 16px 12px">'+infAirList(past)+'</div>':'')+
+    (past.length?sh3('放送済み — 新しい順（'+past.length+'件）')+'<div class="panel" style="padding:4px 16px 12px">'+infAirList(past,infCase!=='ALL')+'</div>':'')+
     '<p class="note">出典＝<b>スクール×インフォマ管理シート</b>（④放送カレンダー／⑤台本進行管理／⑥配信進行管理）。ステータス・期限・アラートはシート側の入力と自動計算をそのまま表示しています。</p>';
 }
 
