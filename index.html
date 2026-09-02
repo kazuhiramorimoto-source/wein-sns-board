@@ -882,24 +882,6 @@ function renderKpi(){
     return '<button type="button" class="'+(kpiView===x[0]?'on':'')+'" onclick="kpiView=\''+x[0]+'\';renderKpi()">'+x[1]+'</button>';}).join('')+'</span>';
   var all=B.kpi.filter(function(c){ return kpiSeg==='all'||c.seg===kpiSeg; });
   all.forEach(function(c){ c._s=caseStat(c); });
-  var cnt={good:0,warn:0,bad:0,none:0}; var ps=[];
-  all.forEach(function(c){ cnt[c._s.st]++; if(c._s.pace!==null) ps.push(c._s.pace); });
-  var avg=ps.length?Math.round(ps.reduce(function(x,y){return x+y;},0)/ps.length):null;
-  var tiles='<div class="ktiles">'+
-    '<div class="kt"><span class="ktl">案件数</span><span class="ktv">'+all.length+'</span></div>'+
-    '<div class="kt good"><span class="ktl">順調</span><span class="ktv c-good">'+cnt.good+'</span></div>'+
-    '<div class="kt warn"><span class="ktl">注意</span><span class="ktv c-warn">'+cnt.warn+'</span></div>'+
-    '<div class="kt bad"><span class="ktl">要対応</span><span class="ktv c-bad">'+cnt.bad+'</span></div>'+
-    '<div class="kt"><span class="ktl">未計測</span><span class="ktv" style="color:var(--ink-3)">'+cnt.none+'</span></div>'+
-    '<div class="kt"><span class="ktl">全体平均（現時点）</span><span class="ktv '+(avg===null?'':avg>=100?'c-good':avg>=60?'c-warn':'c-bad')+'">'+(avg===null?'—':avg+'%')+'</span></div></div>';
-  var bads=all.filter(function(c){ return c._s.st==='bad'; });
-  var goods=all.filter(function(c){ return c._s.st==='good'; });
-  var focus='';
-  if(bads.length||goods.length){
-    focus='<div class="fband"><span class="fbl">FOCUS</span><span class="fbt">'+
-      (bads.length?'<b class="c-bad">要対応：</b>'+bads.map(function(c){ var w=worstKpi(c); return esc(c.name)+'（'+c._s.pace+'%'+(w?'・最遅れ: '+esc(w):'')+'）'; }).join('、')+'。':'')+
-      (goods.length?' <b class="c-good">好調：</b>'+goods.map(function(c){ return esc(c.name)+'（'+c._s.pace+'%）'; }).join('、')+'。':'')+'</span></div>';
-  }
   var chips='<span class="switch">'+[['','すべて'],['good','順調'],['warn','注意'],['bad','要対応'],['none','未計測']].map(function(x){
     return '<button type="button" class="'+(kpiFilter===x[0]?'on':'')+'" onclick="kpiFilter=\''+x[0]+'\';renderKpi()">'+(x[0]?'<i class="ld b-'+x[0]+'" style="width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:4px"></i>':'')+x[1]+'</button>';}).join('')+'</span>';
   var sort='<span class="switch">'+[['asc','低い順'],['desc','高い順'],['name','名前順']].map(function(x){
@@ -910,7 +892,7 @@ function renderKpi(){
   else if(kpiView==='table') body=tableHtml(cases);
   else if(kpiView==='report') body=reportHtml(all);
   else body='<div class="kgrid">'+cases.map(kpiCardHtml).join('')+'</div>';
-  $('view').innerHTML=tiles+focus+
+  $('view').innerHTML=
     '<div class="panel" style="margin-bottom:14px"><div class="bar">'+seg+view+
     '<span class="spacer"></span><span class="note" style="margin:0">'+esc(B.kpiBasis)+'</span></div>'+
     (kpiView!=='report'?'<div class="bar" style="padding-top:8px;padding-bottom:8px">'+chips+sort+
