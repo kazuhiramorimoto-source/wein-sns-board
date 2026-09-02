@@ -397,11 +397,8 @@ function renderSchools(){
     var pace=schoolAch(kc), month=schoolMonthAch(kc);
     var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
     var up=c.rows.filter(function(r){ var d=pd(r[0]); return d&&d>=t0; }).length;
-    var con=(B.concepts||{})[c.name];
-    var tz=con&&con.length?String(con[0][1]).split('。')[0]:'';
     return '<div class="scard '+(c.seg==='talent'?'tl':'sc')+'" onclick="openSchoolIdx('+i+')"><div class="sn2">'+logoTile(c.name,34,c.seg,88)+esc(c.name)+
       '<span class="sctag'+(c.seg==='talent'?' tl':'')+'" style="margin-left:auto">'+(c.seg==='talent'?'非スクール':'スクール')+'</span></div>'+
-      (tz?'<div class="steaser tzr">'+esc(tz)+'</div>':'')+
       '<div class="statrow">'+
       '<span class="stat '+pst+'"><span class="sl">現時点達成率</span><span class="sv c-'+pst+'">'+(pace===null?'—':pace+'%')+'</span></span>'+
       '<span class="stat"><span class="sl">月間達成率</span><span class="sv" style="color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span></div>'+
