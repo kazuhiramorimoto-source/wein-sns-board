@@ -294,6 +294,16 @@ footer{font-size:10.5px;}
 .mrow b{flex:none;width:132px;color:var(--accent-ink);font-weight:800;}
 .mrow span{flex:1;min-width:0;color:var(--ink);font-weight:600;}
 @media (max-width:600px){ .mrow{flex-direction:column;gap:2px;} .mrow b{width:auto;} }
+/* ---- v15: KPI行を横1行レイアウト（カード幅が広いとき） ---- */
+.kcard{container-type:inline-size;}
+@container (min-width:520px){
+  .krow2{display:grid;grid-template-columns:minmax(180px,1.2fr) max-content minmax(70px,1fr) 64px;gap:4px 16px;align-items:center;}
+  .krow2 .kn2{flex:none;white-space:normal;}
+  .krow2 .kv2{text-align:right;}
+  .krow2 .kbar{width:auto;}
+  .krow2 .kp2{justify-self:end;}
+  .krow2.cvrow{padding:9px 12px;}
+}
 </style>
 </head>
 <body>
