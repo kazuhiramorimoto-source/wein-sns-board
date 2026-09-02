@@ -324,6 +324,22 @@ footer{font-size:10.5px;}
 .kt .ktp{display:block;font-size:10.5px;font-weight:800;margin-top:1px;}
 @media (max-width:900px){ .layout{display:block;} #side{display:none;} }
 @media (min-width:901px){ #tabs{display:none;} }
+/* ---- v17: インフォマ（放送カレンダー／台本・配信進行） ---- */
+.cent.infm{background:#F6EEFF!important;box-shadow:inset 0 0 0 1.5px #a855f7;}
+.cent.infm .ct{color:#4c1d95;}
+.ibadge{display:inline-block;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:#7E22CE;color:#fff;letter-spacing:.04em;vertical-align:1px;margin-right:4px;white-space:nowrap;}
+.ibadge.k2{background:#0e7490;}
+.ialert{display:inline-block;font-family:"Inter",var(--mono);font-size:11px;font-weight:800;padding:1.5px 9px;border-radius:999px;white-space:nowrap;}
+.ialert.a-bad{background:var(--bad-soft);color:var(--bad-ink);}
+.ialert.a-warn{background:var(--warn-soft);color:var(--warn-ink);}
+.ialert.a-good{background:var(--good-soft);color:var(--good-ink);}
+.ialert.a-none{background:var(--surface-3);color:var(--ink-3);}
+.fixrow.inf .tc{color:#6b21a8;background:#F3E8FF;}
+@media (prefers-color-scheme:dark){
+  .cent.infm{background:#2a1b3d!important;}
+  .cent.infm .ct{color:#e9d5ff;}
+  .fixrow.inf .tc{color:#d8b4fe;background:#2d1b45;}
+}
 </style>
 </head>
 <body>
@@ -340,7 +356,7 @@ footer{font-size:10.5px;}
   <div id="view"></div>
   <footer>
     WEIN スクール横串オーガニック ─ 全スクール・案件の投稿スケジュールとKPI進捗の共有ボード（閲覧専用）。<br>
-    データはWEIN_SNS運用スケジュール／KPI横断まとめのスナップショットです。スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
+    データはWEIN_SNS運用スケジュール／KPI横断まとめ／スクール×インフォマ管理シートのスナップショットです。投稿スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
   </footer>
 </div>
 </div>
@@ -365,7 +381,10 @@ B.sched.forEach(function(c){ if(!c.seg) c.seg = SCHOOL_SET[c.name]?'school':'tal
 var curTab='schools', schedMode='cal', curCase='ALL', kpiSeg='all', curSchool=null;
 var kpiView='card', kpiFilter='', kpiSort='asc';
 var calCur=null;
-var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3'};
+var INF=(B.infoma&&B.infoma.air)?B.infoma:{air:[],prog:[]};
+var infShow=true, infCase='ALL';
+var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3',
+  '台本FIX済':'#D9EAD3','確認OK':'#D9EAD3','完成':'#D9EAD3','初稿待ち':'#FFF2CC','制作中':'#FFF2CC','校正確認中':'#D9D2E9','未着手':'#F4CCCC'};
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function $(id){return document.getElementById(id);}
 function svgw(p){return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';}
@@ -377,8 +396,10 @@ var IC={
  users: svgw('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.6"/><path d="M16 14.4c3 .3 5.5 2.4 5.5 5.6"/>'),
  list: svgw('<path d="M8.5 6h12M8.5 12h12M8.5 18h12M3.8 6h.01M3.8 12h.01M3.8 18h.01"/>'),
  chevL: svgw('<path d="M14.5 6l-6 6 6 6"/>'),
- chevR: svgw('<path d="M9.5 6l6 6-6 6"/>')
+ chevR: svgw('<path d="M9.5 6l6 6-6 6"/>'),
+ tv: svgw('<rect x="2.5" y="7.5" width="19" height="13" rx="2"/><path d="M8 3l4 4.5L16 3"/>')
 };
+function infAlertCls(a){ return a==='超過'?'bad':(a==='要注意'||a==='注意')?'warn':(a==='完了'||a==='OK')?'good':'none'; }
 
 function stag(st,extra){var c=STATUS_COLORS[st]||'#ECEFF3';var fg=st==='投稿済'?'#606060':'#3d3d3d';
   return '<span class="stag" style="background:'+c+';color:'+fg+'">'+esc(st||'予定')+(extra||'')+'</span>';}
@@ -404,11 +425,12 @@ function allRows(){
 
 function render(){
   $('subline').textContent = B.updated+' 時点のスナップショット';
-  var tabs=[{k:'schools',l:IC.school+'スクール'},{k:'sched',l:IC.cal+'スケジュール'},{k:'kpi',l:IC.chart+'KPI進捗'}];
-  $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="'+(curTab===t.k?'on':'')+'" onclick="curTab=\''+t.k+'\';render()">'+t.l+'</button>';}).join('');
+  var tabs=[{k:'schools',l:IC.school+'スクール'},{k:'sched',l:IC.cal+'スケジュール'},{k:'infoma',l:IC.tv+'インフォマ'},{k:'kpi',l:IC.chart+'KPI進捗'}];
+  $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="'+(curTab===t.k?'on':'')+'" onclick="goTab(\''+t.k+'\')">'+t.l+'</button>';}).join('');
   renderSide();
   if(curTab==='schools') renderSchools();
   else if(curTab==='sched') renderSched();
+  else if(curTab==='infoma') renderInfoma();
   else renderKpi();
 }
 function goTab(t){ curTab=t; curSchool=null; render(); window.scrollTo(0,0); }
@@ -420,6 +442,7 @@ function renderSide(){
   h+='<div class="snav"><div class="nl">メニュー</div>'+
     nb(curTab==='schools'&&!curSchool,"goTab('schools')",IC.school+'<span class="tx">スクールハブ</span>')+
     nb(curTab==='sched',"goTab('sched')",IC.cal+'<span class="tx">スケジュール</span>')+
+    nb(curTab==='infoma',"goTab('infoma')",IC.tv+'<span class="tx">インフォマ</span>')+
     nb(curTab==='kpi',"goTab('kpi')",IC.chart+'<span class="tx">KPI進捗</span>')+'</div>';
   function grp(label,seg){
     var btns='';
@@ -451,12 +474,13 @@ function renderSchools(){
     var pace=schoolAch(kc), month=schoolMonthAch(kc);
     var pst=pace===null?'none':pace>=100?'good':pace>=60?'warn':'bad';
     var up=c.rows.filter(function(r){ var d=pd(r[0]); return d&&d>=t0; }).length;
+    var inf=INF.air.filter(function(a){ var d=pd(a[0]); return a[1]===c.name&&d&&d>=t0; }).length;
     return '<div class="scard '+(c.seg==='talent'?'tl':'sc')+'" onclick="openSchoolIdx('+i+')"><div class="sn2">'+logoTile(c.name,34,c.seg,88)+esc(c.name)+
       '<span class="sctag'+(c.seg==='talent'?' tl':'')+'" style="margin-left:auto">'+(c.seg==='talent'?'非スクール':'スクール')+'</span></div>'+
       '<div class="statrow">'+
       '<span class="stat '+pst+'"><span class="sl">現時点達成率</span><span class="sv c-'+pst+'">'+(pace===null?'—':pace+'%')+'</span></span>'+
       '<span class="stat"><span class="sl">月間達成率</span><span class="sv" style="color:var(--ink)">'+(month===null?'—':month+'%')+'</span></span></div>'+
-      '<div class="steaser">今後の予定 '+up+'件 ／ タップで詳細</div></div>';
+      '<div class="steaser">今後の投稿 '+up+'件'+(inf?' ／ <b style="color:#7E22CE">インフォマ放送 '+inf+'件</b>':'')+' ／ タップで詳細</div></div>';
   }
   var sHtml='', tHtml='';
   B.sched.forEach(function(c,i){ if(c.seg==='school') sHtml+=card(c,i); else tHtml+=card(c,i); });
@@ -507,9 +531,24 @@ function renderSchoolDetail(){
   var schedHtml='<div class="panel" style="padding:12px 16px">'+
     (rows||'<p class="note" style="margin:4px 0">今後の投稿予定はまだ入っていません。</p>')+undRows+
     (up.length>20?'<p class="note" style="margin:8px 0 0">ほか '+(up.length-20)+' 件は「カレンダーで見る」から。</p>':'')+'</div>';
+  var infAir=infDated(INF.air.filter(function(a){ return a[1]===name; })).filter(function(x){ return x.d>=t0; });
+  var infPr=INF.prog.filter(function(p){ return p[2]===name; });
+  var infHtml='';
+  if(infAir.length||infPr.length){
+    infHtml='<div class="panel" style="padding:6px 16px 12px">'+
+      (infAir.length?infAirList(infAir.slice(0,12)):'<p class="note" style="margin:8px 0">今後の放送予定はまだ入っていません。</p>')+
+      (infAir.length>12?'<p class="note" style="margin:6px 0 0">ほか '+(infAir.length-12)+' 件は「インフォマ」タブから。</p>':'')+
+      (infPr.length?'<div class="grp-h2" style="padding:12px 0 4px">台本・配信の進行</div>'+infPr.map(function(p){
+        return '<div class="fixrow"><span class="tc num">'+esc(p[3]||'未定')+'</span>'+
+          '<div class="fx"><span class="ibadge'+(p[0]==='配信'?' k2':'')+'">'+esc(p[0])+'</span>'+esc(p[1]||'（番組未定）')+
+          (p[5]?'<small>／ '+esc(p[5])+'</small>':'')+(p[6]?'<small>／ 期限 '+esc(p[6])+'</small>':'')+'</div>'+
+          (p[4]?stag(p[4]):'')+'<span class="ialert a-'+infAlertCls(p[7])+'">'+esc(p[7]||'—')+'</span></div>';
+      }).join(''):'')+'</div>';
+  }
   $('view').innerHTML=head+cvTiles(kc)+
     sh3('KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+
     sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml+
+    (infHtml?sh3('インフォマ — 放送予定・台本/配信の進行')+infHtml:'')+
     sh3('コンセプト設計')+conceptHtml;
 }
 function cvTiles(kc){
@@ -543,19 +582,21 @@ function renderSched(){
     '<button type="button" class="'+(curCase==='TALENT'?'on':'')+'" onclick="setCase(\'TALENT\')">'+IC.users+'非スクール全体</button></span>';
   var mode='<span class="switch"><button type="button" class="'+(schedMode==='cal'?'on':'')+'" onclick="schedMode=\'cal\';renderSched()">'+IC.cal+'カレンダー</button>'+
     '<button type="button" class="'+(schedMode==='list'?'on':'')+'" onclick="schedMode=\'list\';renderSched()">'+IC.list+'リスト</button></span>';
+  var infBtn='<span class="switch"><button type="button" class="tl'+(infShow?' on':'')+'" onclick="infShow=!infShow;renderSched()">'+IC.tv+'インフォマ放送 '+(infShow?'表示中':'非表示')+'</button></span>';
   var rows=allRows();
-  var body = schedMode==='cal' ? calHtml(rows) : listHtml(rows);
-  $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+'</div>'+
+  var body = schedMode==='cal' ? calHtml(rows) : (listHtml(rows)+(infShow?infListHtml():''));
+  $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+infBtn+'</div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+'<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">色＝制作状況</span>'+
-    '<span class="stag" style="background:#DDEBF7">企画/台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3"><span class="dmk half" style="margin-right:4px"></span>納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060"><span class="dmk" style="margin-right:4px"></span>投稿済=完了</span><span class="stag" style="background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2)"><span class="dlabel" style="margin-right:4px">初稿</span>点線＝初稿締切</span></div>'+body+'</div>'+
-    '<p class="note">チップの色は運用スケジュールシートの「状況」と同じ色です。</p>';
+    '<span class="stag" style="background:#DDEBF7">企画/台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3"><span class="dmk half" style="margin-right:4px"></span>納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060"><span class="dmk" style="margin-right:4px"></span>投稿済=完了</span><span class="stag" style="background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2)"><span class="dlabel" style="margin-right:4px">初稿</span>点線＝初稿締切</span><span class="stag" style="background:#F6EEFF;box-shadow:inset 0 0 0 1.5px #a855f7;color:#4c1d95"><span class="ibadge" style="margin-right:4px">放送</span>紫枠＝インフォマ放送</span></div>'+body+'</div>'+
+    '<p class="note">チップの色は運用スケジュールシートの「状況」と同じ色です。紫枠は「スクール×インフォマ管理シート」の放送カレンダーです。</p>';
 }
 
 function calHtml(rows){
   var y=calCur.y,m=calCur.m,byDay={};
   rows.forEach(function(r){var d=pd(r.date);if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({g:false,r:r});}});
   rows.forEach(function(r){ if(!r.draft||r.draft===r.date) return; var d=pd(r.draft); if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({g:true,r:r});} });
+  if(infShow) infFiltered().forEach(function(a){ var d=pd(a[0]); if(d&&d.getFullYear()===y&&d.getMonth()===m){(byDay[d.getDate()]=byDay[d.getDate()]||[]).push({inf:a});} });
   var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
   var tnow=new Date(),thisMonth=tnow.getFullYear()===y&&tnow.getMonth()===m;
   var cells='';
@@ -564,6 +605,11 @@ function calHtml(rows){
   for(var d=1;d<=days;d++){
     var ents=(byDay[d]||[]).map(function(e){
       var r=e.r;
+      if(e.inf){
+        return '<div class="cent infm" title="インフォマ放送：'+esc(e.inf[2])+'（'+esc(e.inf[1])+'）">'+
+          '<span class="ct"><span class="ibadge">放送</span>'+
+          (isAgg()?'<span class="sctag tl">'+esc(e.inf[1])+'</span> ':'')+esc(e.inf[2])+'</span></div>';
+      }
       if(e.g){
         return '<div class="cent draft" title="初稿締切：'+esc(r.title)+'（'+esc(r.sc)+'・投稿予定 '+esc(r.date)+'）">'+
           '<span class="ct"><span class="dlabel">初稿</span>'+
@@ -602,6 +648,91 @@ function listHtml(rows){
   return sec('<span class="gdot" style="background:var(--accent)"></span>今後の予定 — 期日が近い順（'+up.length+'件）',up)+
     sec('<span class="gdot" style="background:var(--warn)"></span>日付未定・制作中（'+undated.length+'件）',undated)+
     sec('<span class="gdot" style="background:var(--good)"></span>直近の投稿済み — 新しい順（'+past.length+'件）',past);
+}
+
+/* ---------- インフォマ（放送カレンダー・台本/配信進行） ---------- */
+function infFiltered(){
+  if(curCase==='TALENT') return [];
+  return INF.air.filter(function(a){ return isAgg() || a[1]===curCase; });
+}
+function infDated(arr){
+  return arr.map(function(a){ return {d:pd(a[0]),s:a[1],p:a[2]}; })
+            .filter(function(x){ return x.d; })
+            .sort(function(a,b){ return a.d-b.d; });
+}
+function infAirList(arr){
+  var out='',lastM='';
+  arr.forEach(function(x){
+    var mk=x.d.getFullYear()+'年'+(x.d.getMonth()+1)+'月';
+    if(mk!==lastM){ out+='<div class="grp-h2" style="padding:10px 0 4px">'+mk+'</div>'; lastM=mk; }
+    out+='<div class="fixrow inf"><span class="tc num">'+(x.d.getMonth()+1)+'/'+x.d.getDate()+'（'+'日月火水木金土'.charAt(x.d.getDay())+'）</span>'+
+      '<div class="fx"><span class="sctag tl">'+esc(x.s||'—')+'</span> '+esc(x.p)+'</div></div>';
+  });
+  return out;
+}
+function infListHtml(){
+  var t0=new Date(); t0.setHours(0,0,0,0);
+  var up=infDated(infFiltered()).filter(function(x){ return x.d>=t0; });
+  if(!up.length) return '';
+  var rows=up.map(function(x){
+    return '<tr><td class="num">'+(x.d.getMonth()+1)+'/'+x.d.getDate()+'（'+'日月火水木金土'.charAt(x.d.getDay())+'）</td>'+
+      '<td><span class="sctag tl">'+esc(x.s||'—')+'</span></td><td class="wr">'+esc(x.p)+'</td></tr>';
+  }).join('');
+  return '<div class="grp-h2"><span class="gdot" style="background:#a855f7"></span>インフォマ放送予定 — 期日が近い順（'+up.length+'件）</div>'+
+    '<div class="tbl-scroll"><table><thead><tr><th>放送日</th><th>スクール</th><th>番組</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function infProgTable(prog){
+  if(!prog.length) return '<p class="note">台本・配信の進行はまだ入力されていません。</p>';
+  var ord={bad:0,warn:1,none:2,good:3};
+  var ps=prog.slice().sort(function(a,b){
+    var x=ord[infAlertCls(a[7])],y=ord[infAlertCls(b[7])];
+    if(x!==y) return x-y;
+    var da=pd(a[3]),db=pd(b[3]); if(!da) return 1; if(!db) return -1; return da-db;
+  });
+  var rows=ps.map(function(p){
+    return '<tr><td><span class="ibadge'+(p[0]==='配信'?' k2':'')+'">'+esc(p[0])+'</span></td>'+
+      '<td><span class="sctag tl">'+esc(p[2]||'—')+'</span></td>'+
+      '<td class="wr">'+esc(p[1]||'（番組未定）')+(p[8]?' <small style="color:var(--ink-3);font-weight:500">／ '+esc(p[8])+'</small>':'')+'</td>'+
+      '<td class="num">'+esc(p[3]||'—')+'</td>'+
+      '<td>'+(p[4]?stag(p[4]):'—')+'</td><td>'+esc(p[5]||'')+'</td>'+
+      '<td class="num">'+esc(p[6]||'—')+'</td>'+
+      '<td><span class="ialert a-'+infAlertCls(p[7])+'">'+esc(p[7]||'—')+'</span></td></tr>';
+  }).join('');
+  return '<div class="panel"><div class="tbl-scroll"><table><thead><tr><th>区分</th><th>スクール</th><th>番組・メモ</th><th>撮影／配信日</th><th>ステータス</th><th>担当</th><th>期限</th><th>アラート</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+function infCases(){
+  var seen={},list=[];
+  B.sched.forEach(function(c){ seen[c.name]=seen[c.name]||0; });
+  INF.air.forEach(function(a){ if(a[1]&&!seen[a[1]+'|x']){ seen[a[1]+'|x']=1; list.push(a[1]); } });
+  INF.prog.forEach(function(p){ if(p[2]&&!seen[p[2]+'|x']){ seen[p[2]+'|x']=1; list.push(p[2]); } });
+  return list;
+}
+function setInfCase(n){ infCase=n; renderInfoma(); }
+function renderInfoma(){
+  var t0=new Date(); t0.setHours(0,0,0,0); var now=new Date();
+  var air=infDated(INF.air.filter(function(a){ return infCase==='ALL'||a[1]===infCase; }));
+  var up=air.filter(function(x){ return x.d>=t0; });
+  var past=air.filter(function(x){ return x.d<t0; }).reverse();
+  var thisMo=air.filter(function(x){ return x.d.getFullYear()===now.getFullYear()&&x.d.getMonth()===now.getMonth(); }).length;
+  var prog=INF.prog.filter(function(p){ return infCase==='ALL'||p[2]===infCase; });
+  var over=prog.filter(function(p){ return infAlertCls(p[7])==='bad'; }).length;
+  var next=up.length?((up[0].d.getMonth()+1)+'/'+up[0].d.getDate()):'—';
+  var tiles='<div class="ktiles">'+
+    '<div class="kt cvt"><span class="ktl">今後の放送</span><span class="ktv">'+up.length+'<small class="ktt">本</small></span></div>'+
+    '<div class="kt"><span class="ktl">直近の放送日</span><span class="ktv">'+next+'</span></div>'+
+    '<div class="kt"><span class="ktl">今月の放送</span><span class="ktv">'+thisMo+'<small class="ktt">本</small></span></div>'+
+    '<div class="kt"><span class="ktl">進行アラート超過</span><span class="ktv '+(over?'c-bad':'c-good')+'">'+over+'</span></div>'+
+    '<div class="kt"><span class="ktl">進行中の行数</span><span class="ktv">'+prog.length+'</span></div></div>';
+  var sw='<span class="switch"><button type="button" class="'+(infCase==='ALL'?'on':'')+'" onclick="setInfCase(\'ALL\')">'+IC.all+'すべて</button>'+
+    infCases().map(function(n){ return '<button type="button" class="sc'+(infCase===n?' on':'')+'" onclick="setInfCase(\''+n.replace(/'/g,"\\'")+'\')">'+esc(n)+'</button>'; }).join('')+'</span>';
+  $('view').innerHTML=tiles+
+    '<div class="panel" style="margin-bottom:14px"><div class="bar">'+sw+
+    '<span class="spacer"></span><span class="note" style="margin:0">スクール×インフォマ管理シート</span></div></div>'+
+    sh3('放送予定 — 期日が近い順')+
+    '<div class="panel" style="padding:6px 16px 12px">'+(infAirList(up)||'<p class="note" style="margin:8px 0">今後の放送予定はまだ入っていません。</p>')+'</div>'+
+    sh3('台本・配信の進行管理 — 遅れている順')+infProgTable(prog)+
+    (past.length?sh3('放送済み — 新しい順（'+past.length+'件）')+'<div class="panel" style="padding:6px 16px 12px">'+infAirList(past)+'</div>':'')+
+    '<p class="note">出典＝<b>スクール×インフォマ管理シート</b>（④放送カレンダー／⑤台本進行管理／⑥配信進行管理）。ステータス・期限・アラートはシート側の入力と自動計算をそのまま表示しています。</p>';
 }
 
 function numv(x){ return (x===null||x===undefined||x==='')?null:+x; }

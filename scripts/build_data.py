@@ -13,6 +13,7 @@ TODAY = NOW.date()
 SCHED_ID = "1PEWkztpD7tXCUiFYGwjseb2muDkOrq-l2lpXTt5DGBs"
 KPI_ID = "14TLXnMAY_8lC48yThRo5owTgi-O7esk0LeDXAszdoLA"
 LEDGER_ID = "1j0gLG93jXCzH3GH7DTFVukcENR4gbc3O1NgDwUHPMCE"
+INFOMA_ID = "1SYpEuUaFCg5ogRmt2L1KZ8b-Wurg1r5cCsRaox37350"  # スクール×インフォマ管理シート
 
 # (board名, seg, シートタブ名, レイアウト)
 SCHED_TABS = [
@@ -191,6 +192,59 @@ def build_kpi():
     return basis, [cases[n] for n in KPI_ORDER if n in cases]
 
 
+def norm_school(s):
+    """インフォマシートのスクール表記をボードの案件名に寄せる（全角＋・カーリー引用符）"""
+    s = (s or "").strip().replace("’", "'")
+    return {"AI＋": "AI+", "MERIZE": "MERISE"}.get(s, s)
+
+
+def md(s):
+    """2026-07-25 / 2026/7/25 / 7/25 → "7/25"（空なら""）"""
+    s = (s or "").strip()
+    m = re.match(r"^(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
+    if m:
+        return "%d/%d" % (int(m.group(2)), int(m.group(3)))
+    m = re.match(r"^(\d{1,2})/(\d{1,2})$", s)
+    return "%d/%d" % (int(m.group(1)), int(m.group(2))) if m else ""
+
+
+def build_infoma():
+    """スクール×インフォマ管理シート → 放送予定（④）＋台本/配信の進行（⑤⑥）"""
+    cal, scr, dlv = fetch(INFOMA_ID, [
+        "'④ 放送カレンダー 2026'!A1:G80",
+        "'⑤ 台本進行管理'!A4:J200",
+        "'⑥ 配信進行管理'!A4:J200",
+    ])
+    air, y, mo = [], None, None
+    for r in cal:
+        hm = re.match(r"^(\d{4})年\s*(\d{1,2})月", cell(r, 0))
+        if hm:
+            y, mo = int(hm.group(1)), int(hm.group(2))
+            continue
+        if not mo:
+            continue
+        for c in r[:7]:
+            lines = [x.strip() for x in (c if isinstance(c, str) else str(c)).split("\n") if x.strip()]
+            if not lines or not re.match(r"^\d{1,2}$", lines[0]):
+                continue
+            day, sch = int(lines[0]), ""
+            for ln in lines[1:]:
+                if ln.startswith("◆"):
+                    sch = norm_school(ln[1:])
+                elif ln.startswith("・"):
+                    air.append(["%d/%d" % (mo, day), sch, ln[1:].strip()])
+    prog = []
+    for rows, kind in ((scr, "台本"), (dlv, "配信")):
+        for r in rows:
+            program, sch = cell(r, 0), norm_school(cell(r, 1))
+            if not program and not sch:
+                continue
+            # A番組 B スクール C 撮影日/配信日 D訴求 E担当 Fステータス G期限 H残日数 Iアラート Jメモ
+            prog.append([kind, program, sch, md(cell(r, 2)), cell(r, 5),
+                         cell(r, 4), md(cell(r, 6)), cell(r, 8), cell(r, 9)])
+    return {"air": air, "prog": prog}
+
+
 def build_concepts():
     (rows,) = fetch(LEDGER_ID, ["'コンセプト'!A2:D100"])
     out = {}
@@ -209,6 +263,7 @@ def main():
     basis, kpi = build_kpi()
     sched = build_sched()
     concepts = build_concepts()
+    infoma = build_infoma()
     board = {
         "updated": NOW.strftime("%Y/%m/%d %H:%M") + " 自動更新",
         "year": TODAY.year,
@@ -216,6 +271,7 @@ def main():
         "concepts": concepts,
         "kpi": kpi,
         "sched": sched,
+        "infoma": infoma,
     }
     js = ("// WEIN スクール横串オーガニック data.js — 自動生成 "
           + NOW.strftime("%Y-%m-%d %H:%M JST") + "\nwindow.BOARD = "
@@ -227,8 +283,8 @@ def main():
     html = open(ipath, encoding="utf-8").read()
     html = re.sub(r"data\.js\?v=[0-9A-Za-z]+", "data.js?v=" + NOW.strftime("%Y%m%d%H%M"), html)
     open(ipath, "w", encoding="utf-8").write(html)
-    print("OK: sched cases=%d, kpi cases=%d, concepts=%d, basis=%s" % (
-        len(sched), len(kpi), len(concepts), basis))
+    print("OK: sched cases=%d, kpi cases=%d, concepts=%d, infoma air=%d/prog=%d, basis=%s" % (
+        len(sched), len(kpi), len(concepts), len(infoma["air"]), len(infoma["prog"]), basis))
     for c in sched:
         print("  -", c["name"], len(c["rows"]), "rows")
 
