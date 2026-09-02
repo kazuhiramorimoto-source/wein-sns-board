@@ -297,16 +297,38 @@ footer{font-size:10.5px;}
 /* ---- v15: KPI行を横1行レイアウト（カード幅が広いとき） ---- */
 .kcard{container-type:inline-size;}
 @container (min-width:520px){
-  .krow2{display:grid;grid-template-columns:minmax(180px,1.2fr) max-content minmax(70px,1fr) 64px;gap:4px 16px;align-items:center;}
+  .krow2{display:grid;grid-template-columns:minmax(180px,1.2fr) max-content minmax(70px,1fr) 64px max-content;gap:4px 14px;align-items:center;}
   .krow2 .kn2{flex:none;white-space:normal;}
   .krow2 .kv2{text-align:right;}
   .krow2 .kbar{width:auto;}
   .krow2 .kp2{justify-self:end;}
   .krow2.cvrow{padding:9px 12px;}
 }
+.kmn{font-family:"Inter",var(--mono);font-size:10.5px;font-weight:700;color:var(--ink-3);white-space:nowrap;text-align:right;}
+/* ---- v16: 左サイドバー＋CVタイル ---- */
+.layout{display:grid;grid-template-columns:216px minmax(0,1fr);max-width:1400px;margin:0 auto;}
+#side{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:18px 12px 30px;border-right:1px solid var(--border);}
+.sidebrand{display:flex;align-items:center;gap:8px;padding:2px 8px 12px;}
+.sidebrand .bt{font-size:11.5px;font-weight:800;letter-spacing:.02em;line-height:1.4;}
+.snav{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;}
+.snav .nl{font-size:9.5px;font-weight:800;color:var(--ink-3);letter-spacing:.1em;margin:12px 8px 4px;}
+.snav button{display:flex;align-items:center;gap:8px;border:none;background:transparent;text-align:left;font-size:12.5px;font-weight:700;color:var(--ink-2);padding:7px 10px;border-radius:9px;width:100%;}
+.snav button .ic{margin:0;flex:none;}
+.snav button.on{background:var(--grad);color:#fff;box-shadow:0 3px 10px rgba(99,82,230,.3);}
+.snav button.on .ic{stroke:#fff;}
+.snav button:hover:not(.on){background:var(--surface-2);color:var(--ink);}
+.snav button .ltile{flex:none;}
+.snav button .tx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kt.cvt{border-left:3px solid var(--accent);}
+.kt .ktt{font-size:11px;color:var(--ink-3);font-weight:700;margin-left:4px;font-family:"Inter",var(--mono);}
+.kt .ktp{display:block;font-size:10.5px;font-weight:800;margin-top:1px;}
+@media (max-width:900px){ .layout{display:block;} #side{display:none;} }
+@media (min-width:901px){ #tabs{display:none;} }
 </style>
 </head>
 <body>
+<div class="layout">
+<aside id="side"></aside>
 <div class="wrap">
   <header>
     <span class="badge">WEIN</span>
@@ -320,6 +342,7 @@ footer{font-size:10.5px;}
     WEIN スクール横串オーガニック ─ 全スクール・案件の投稿スケジュールとKPI進捗の共有ボード（閲覧専用）。<br>
     データはWEIN_SNS運用スケジュール／KPI横断まとめのスナップショットです。スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
   </footer>
+</div>
 </div>
 <script src="data.js?v=202609020931"></script>
 <script>
@@ -383,9 +406,30 @@ function render(){
   $('subline').textContent = B.updated+' 時点のスナップショット';
   var tabs=[{k:'schools',l:IC.school+'スクール'},{k:'sched',l:IC.cal+'スケジュール'},{k:'kpi',l:IC.chart+'KPI進捗'}];
   $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="'+(curTab===t.k?'on':'')+'" onclick="curTab=\''+t.k+'\';render()">'+t.l+'</button>';}).join('');
+  renderSide();
   if(curTab==='schools') renderSchools();
   else if(curTab==='sched') renderSched();
   else renderKpi();
+}
+function goTab(t){ curTab=t; curSchool=null; render(); window.scrollTo(0,0); }
+function goSchool(n){ curTab='schools'; curSchool=n; render(); window.scrollTo(0,0); }
+function renderSide(){
+  var el=$('side'); if(!el) return;
+  function nb(on,click,inner){ return '<button type="button" class="'+(on?'on':'')+'" onclick="'+click+'">'+inner+'</button>'; }
+  var h='<div class="sidebrand"><span class="badge">WEIN</span><span class="bt">スクール横串<br>オーガニック</span></div>';
+  h+='<div class="snav"><div class="nl">メニュー</div>'+
+    nb(curTab==='schools'&&!curSchool,"goTab('schools')",IC.school+'<span class="tx">スクールハブ</span>')+
+    nb(curTab==='sched',"goTab('sched')",IC.cal+'<span class="tx">スケジュール</span>')+
+    nb(curTab==='kpi',"goTab('kpi')",IC.chart+'<span class="tx">KPI進捗</span>')+'</div>';
+  function grp(label,seg){
+    var btns='';
+    B.sched.forEach(function(c){ if(c.seg!==seg) return;
+      btns+=nb(curTab==='schools'&&curSchool===c.name,"goSchool('"+c.name.replace(/'/g,"\\'")+"')",logoTile(c.name,18,c.seg,40)+'<span class="tx">'+esc(c.name)+'</span>');
+    });
+    return '<div class="snav"><div class="nl">'+label+'</div>'+btns+'</div>';
+  }
+  h+=grp('スクール','school')+grp('非スクール','talent');
+  el.innerHTML=h;
 }
 
 /* ---------- スクールハブ ---------- */
@@ -463,10 +507,24 @@ function renderSchoolDetail(){
   var schedHtml='<div class="panel" style="padding:12px 16px">'+
     (rows||'<p class="note" style="margin:4px 0">今後の投稿予定はまだ入っていません。</p>')+undRows+
     (up.length>20?'<p class="note" style="margin:8px 0 0">ほか '+(up.length-20)+' 件は「カレンダーで見る」から。</p>':'')+'</div>';
-  $('view').innerHTML=head+
-    sh3('コンセプト設計')+conceptHtml+
+  $('view').innerHTML=head+cvTiles(kc)+
     sh3('KPI進捗 — 現時点達成率（今日までのペース目標比）')+kpiHtml+
-    sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml;
+    sh3('今後の投稿スケジュール — 期日が近い順')+schedHtml+
+    sh3('コンセプト設計')+conceptHtml;
+}
+function cvTiles(kc){
+  if(!kc) return '';
+  var out='';
+  kc.kpis.forEach(function(k){
+    if(!/LINE|面談|契約/.test(k[0])) return;
+    var t=numv(k[1]),pace=numv(k[2]),a=numv(k[3]);
+    var st=kst(t,pace,a);
+    var pct=(pace&&a!==null)?Math.round(a/pace*100)+'%':'—';
+    out+='<div class="kt cvt"><span class="ktl">'+esc(k[0].replace('（オーガニック）','').replace(/（.+?）/,''))+'</span>'+
+      '<span class="ktv">'+(a===null?'—':a.toLocaleString())+'<small class="ktt">/月間 '+(t===null?'—':t.toLocaleString())+'</small></span>'+
+      '<span class="ktp c-'+st+'">現時点 '+pct+'</span></div>';
+  });
+  return out?'<div class="ktiles" style="margin:12px 0 6px">'+out+'</div>':'';
 }
 
 function setCase(i){ curCase = (i==='ALL'||i==='SCHOOL'||i==='TALENT')?i:B.sched[i].name; renderSched(); }
@@ -561,9 +619,10 @@ function kpiCardHtml(c){
     var g=isCv?'CV':(/投稿本数/.test(k[0])?'投稿本数':(/再生|閲覧|インプレ|視聴/.test(k[0])?'再生・インプレッション':(/フォロワー|登録者/.test(k[0])?'フォロワー・登録':'')));
     var hd=(g&&g!=='CV'&&g!==lastG)?'<div class="ksec">'+g+'</div>':'';
     if(g)lastG=g;
+    var mon=(t&&a!==null)?Math.round(a/t*100)+'%':'—';
     return hd+'<div class="krow2'+(isCv?' cvrow':'')+'"><span class="kn2'+(isCv?' cv':'')+'" title="月間目標 '+(t===null?'—':t.toLocaleString())+'">'+(isCv?'<span class="cvmark">CV</span>':'')+esc(k[0])+'</span>'+
       '<span class="kv2"><b>'+(a===null?'—':a.toLocaleString())+'</b><span class="tgt"> /月間 '+(t===null?'—':t.toLocaleString())+'</span></span>'+
-      '<span class="kbar"><i class="b-'+st+'" style="width:'+w+'%"></i></span><span class="kp2 c-'+st+'">'+pct+'</span></div>';
+      '<span class="kbar"><i class="b-'+st+'" style="width:'+w+'%"></i></span><span class="kp2 c-'+st+'">'+pct+'</span><span class="kmn">月間 '+mon+'</span></div>';
   }).join('');
   var avg=pr.length?Math.round(pr.reduce(function(x,y){return x+y;},0)/pr.length*100):null;
   var ost=avg===null?'none':avg>=100?'good':avg>=60?'warn':'bad';
