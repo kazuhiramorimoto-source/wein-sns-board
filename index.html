@@ -332,6 +332,7 @@ footer{font-size:10.5px;}
 .cent.infm .ct{color:#4c1d95;}
 .ibadge{display:inline-block;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:#7E22CE;color:#fff;letter-spacing:.04em;vertical-align:1px;margin-right:4px;white-space:nowrap;}
 .ibadge.k2{background:#0e7490;}
+.ibadge.k3{background:#4b5563;}
 .ialert{display:inline-block;font-family:"Inter",var(--mono);font-size:11px;font-weight:800;padding:1.5px 9px;border-radius:999px;white-space:nowrap;}
 .ialert.a-bad{background:var(--bad-soft);color:var(--bad-ink);}
 .ialert.a-warn{background:var(--warn-soft);color:var(--warn-ink);}
@@ -481,7 +482,7 @@ var curTab='schools', schedMode='cal', curCase='ALL', kpiSeg='all', curSchool=nu
 var kpiView='card', kpiFilter='', kpiSort='asc';
 var calCur=null, daySel=null;
 var INF=(B.infoma&&B.infoma.air)?B.infoma:{air:[],prog:[]};
-var infShow=true, infCase='ALL';
+var infShow=true, infCase='ALL', infMode='cal', infCal=null, infDaySel=null;
 var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3',
   '台本FIX済':'#D9EAD3','確認OK':'#D9EAD3','完成':'#D9EAD3','初稿待ち':'#FFF2CC','制作中':'#FFF2CC','校正確認中':'#D9D2E9','未着手':'#F4CCCC'};
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -526,7 +527,7 @@ function render(){
   $('subline').textContent = B.updated+' 時点のスナップショット';
   var tabs=[{k:'schools',l:IC.school+'スクール'},{k:'sched',l:IC.cal+'スケジュール'},{k:'infoma',l:IC.tv+'インフォマ'},{k:'kpi',l:IC.chart+'KPI進捗'}];
   $('tabs').innerHTML=tabs.map(function(t){return '<button type="button" class="'+(curTab===t.k?'on':'')+'" onclick="goTab(\''+t.k+'\')">'+t.l+'</button>';}).join('');
-  if(document.body&&document.body.classList) document.body.classList.toggle('wideview',curTab==='sched');
+  if(document.body&&document.body.classList) document.body.classList.toggle('wideview',curTab==='sched'||curTab==='infoma');
   renderSide();
   if(curTab==='schools') renderSchools();
   else if(curTab==='sched') renderSched();
@@ -917,14 +918,102 @@ function infCases(){
   INF.prog.forEach(function(p){ if(p[2]&&!seen[p[2]+'|x']){ seen[p[2]+'|x']=1; list.push(p[2]); } });
   return list;
 }
-function setInfCase(n){ infCase=n; renderInfoma(); }
+function setInfCase(n){ infCase=n; infDaySel=null; renderInfoma(); }
+function infAirF(){ return INF.air.filter(function(a){ return infCase==='ALL'||a[1]===infCase; }); }
+function infProgF(){ return INF.prog.filter(function(p){ return infCase==='ALL'||p[2]===infCase; }); }
+function infKindLabel(p){ return p[0]==='台本'?'撮影':'配信'; }
+function infDueLabel(p){ return p[0]==='台本'?'台本FIX期限':'確認/リンク期限'; }
+
+/* インフォマのカレンダー：放送日＋撮影/収録日＋期限を同じ月グリッドに乗せる */
+function infBuckets(y,m){
+  var by={};
+  function push(d,o){ if(d&&d.getFullYear()===y&&d.getMonth()===m)(by[d.getDate()]=by[d.getDate()]||[]).push(o); }
+  infAirF().forEach(function(a){ push(pd(a[0]),{k:'air',a:a}); });
+  infProgF().forEach(function(p){
+    if(p[3]) push(pd(p[3]),{k:'prog',p:p});
+    if(p[6]&&p[6]!==p[3]) push(pd(p[6]),{k:'due',p:p});
+  });
+  var rank={air:0,prog:1,due:2};
+  Object.keys(by).forEach(function(d){ by[d].sort(function(a,b){ return rank[a.k]-rank[b.k]; }); });
+  return by;
+}
+function infChip(e){
+  if(e.k==='air'){
+    return '<div class="cent infm" style="border-left-color:'+scColor(e.a[1])+'" title="放送：'+esc(e.a[2])+'（'+esc(e.a[1])+'）">'+
+      '<span class="ct"><span class="ibadge" style="background:'+scColor(e.a[1])+'">放送</span>'+esc(e.a[2])+'</span></div>';
+  }
+  var p=e.p, nm=p[1]||'（番組未定）';
+  if(e.k==='due'){
+    return '<div class="cent draft" style="border-left-color:'+scColor(p[2])+'" title="'+esc(infDueLabel(p))+'：'+esc(nm)+'（'+esc(p[2])+'・'+esc(p[4]||'—')+'）">'+
+      '<span class="ct"><span class="dlabel" style="border-color:'+scColor(p[2])+';color:'+scColor(p[2])+'">期限</span>'+esc(nm)+'</span></div>';
+  }
+  var c=STATUS_COLORS[p[4]]||'#e8ecf2';
+  return '<div class="cent" style="background:'+c+';border-left-color:'+scColor(p[2])+'" title="'+esc(infKindLabel(p))+'：'+esc(nm)+'（'+esc(p[2])+'・'+esc(p[4]||'—')+'）">'+
+    '<span class="ct"><span class="ibadge" style="background:'+scColor(p[2])+'">'+esc(infKindLabel(p))+'</span>'+esc(nm)+'</span></div>';
+}
+function infCalShift(n){ infCal.m+=n; if(infCal.m<0){infCal.m=11;infCal.y--;} if(infCal.m>11){infCal.m=0;infCal.y++;} infDaySel=null; renderInfoma(); }
+function infCalToday(){ var t=new Date(); infCal={y:t.getFullYear(),m:t.getMonth()}; infDaySel=null; renderInfoma(); }
+function infSelDay(k){ infDaySel=(infDaySel===k?null:k); renderInfoma(); }
+function infCalHtml(){
+  var y=infCal.y,m=infCal.m,by=infBuckets(y,m);
+  var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  var tnow=new Date(),thisMonth=tnow.getFullYear()===y&&tnow.getMonth()===m;
+  var cells='';
+  ['日','月','火','水','木','金','土'].forEach(function(w,i){cells+='<div class="ch'+(i===0?' sun':i===6?' sat':'')+'">'+w+'</div>';});
+  for(var i=0;i<first;i++)cells+='<div class="cday out"></div>';
+  for(var d=1;d<=days;d++){
+    var list=by[d]||[];
+    var key=y+'-'+m+'-'+d, dow=(first+d-1)%7;
+    var over=list.length-MAXCHIP;
+    cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+((dow===0||dow===6)?' wk':'')+
+      (infDaySel===key?' sel':'')+'" onclick="infSelDay(\''+key+'\')">'+
+      '<div class="dhead"><span class="dnum">'+d+'</span>'+
+      (list.length?'<span class="dcnt">'+list.length+'件</span>':'')+'</div>'+
+      list.slice(0,MAXCHIP).map(infChip).join('')+
+      (over>0?'<button type="button" class="cmore">＋ほか '+over+'件</button>':'')+'</div>';
+  }
+  var rem=(first+days)%7; if(rem)for(var j=rem;j<7;j++)cells+='<div class="cday out"></div>';
+  return '<div class="calhead"><button class="btn" type="button" onclick="infCalShift(-1)">'+IC.chevL+'前月</button>'+
+    '<span class="cm">'+y+'年'+(m+1)+'月</span>'+
+    '<button class="btn" type="button" onclick="infCalShift(1)">翌月'+IC.chevR+'</button>'+
+    '<button class="btn" type="button" onclick="infCalToday()">今日</button>'+
+    '<span class="spacer"></span><span class="note" style="margin:0">日付をクリックするとその日の詳細が下に開きます</span></div>'+
+    '<div class="calwrap"><div class="cal">'+cells+'</div></div>';
+}
+function infDayPanelHtml(){
+  if(!infDaySel) return '';
+  var q=infDaySel.split('-'),y=+q[0],m=+q[1],d=+q[2];
+  if(y!==infCal.y||m!==infCal.m) return '';
+  var list=(infBuckets(y,m)[d])||[], dt=new Date(y,m,d);
+  var head='<div class="dph"><span class="dpd">'+(m+1)+'月'+d+'日（'+'日月火水木金土'.charAt(dt.getDay())+'）</span>'+
+    '<span class="dpn">'+(list.length?list.length+'件':'予定なし')+'</span>'+
+    '<button class="btn close" type="button" onclick="infSelDay(\''+infDaySel+'\')">閉じる</button></div>';
+  if(!list.length) return '<div class="panel dayp" id="infdayp">'+head+'<p class="note dpempty">この日の予定は入っていません。</p></div>';
+  var body=list.map(function(e){
+    if(e.k==='air'){
+      return '<div class="fixrow inf"><span class="tc">放送</span>'+
+        '<div class="fx"><span class="sctag tl">'+esc(e.a[1])+'</span> '+esc(e.a[2])+'</div>'+
+        '<span class="ibadge">インフォマ</span></div>';
+    }
+    var p=e.p, nm=p[1]||'（番組未定）';
+    return '<div class="fixrow"><span class="tc">'+esc(e.k==='due'?'期限':infKindLabel(p))+'</span>'+
+      '<div class="fx"><span class="sctag tl">'+esc(p[2]||'—')+'</span> '+
+      '<span class="ibadge'+(p[0]==='配信'?' k2':' k3')+'">'+esc(p[0])+'</span>'+esc(nm)+
+      (p[5]?'<small>／担当 '+esc(p[5])+'</small>':'')+
+      (e.k==='due'?'<small>／'+esc(infDueLabel(p))+'</small>':(p[6]?'<small>／'+esc(infDueLabel(p))+' '+esc(p[6])+'</small>':''))+
+      (p[8]?'<small>／'+esc(p[8])+'</small>':'')+'</div>'+
+      (p[4]?stag(p[4]):'')+'<span class="ialert a-'+infAlertCls(p[7])+'">'+esc(p[7]||'—')+'</span></div>';
+  }).join('');
+  return '<div class="panel dayp" id="infdayp">'+head+body+'</div>';
+}
 function renderInfoma(){
+  if(!infCal){ var tn=new Date(); infCal={y:tn.getFullYear(),m:tn.getMonth()}; }
   var t0=new Date(); t0.setHours(0,0,0,0); var now=new Date();
-  var air=infDated(INF.air.filter(function(a){ return infCase==='ALL'||a[1]===infCase; }));
+  var air=infDated(infAirF());
   var up=air.filter(function(x){ return x.d>=t0; });
   var past=air.filter(function(x){ return x.d<t0; }).reverse();
   var thisMo=air.filter(function(x){ return x.d.getFullYear()===now.getFullYear()&&x.d.getMonth()===now.getMonth(); }).length;
-  var prog=INF.prog.filter(function(p){ return infCase==='ALL'||p[2]===infCase; });
+  var prog=infProgF();
   var over=prog.filter(function(p){ return infAlertCls(p[7])==='bad'; }).length;
   var next=up.length?((up[0].d.getMonth()+1)+'/'+up[0].d.getDate()):'—';
   var tiles='<div class="ktiles">'+
@@ -935,13 +1024,25 @@ function renderInfoma(){
     '<div class="kt"><span class="ktl">進行中の行数</span><span class="ktv">'+prog.length+'</span></div></div>';
   var sw='<span class="switch"><button type="button" class="'+(infCase==='ALL'?'on':'')+'" onclick="setInfCase(\'ALL\')">'+IC.all+'すべて</button>'+
     infCases().map(function(n){ return '<button type="button" class="sc'+(infCase===n?' on':'')+'" onclick="setInfCase(\''+n.replace(/'/g,"\\'")+'\')">'+esc(n)+'</button>'; }).join('')+'</span>';
+  var mode='<span class="switch"><button type="button" class="'+(infMode==='cal'?'on':'')+'" onclick="infMode=\'cal\';renderInfoma()">'+IC.cal+'カレンダー</button>'+
+    '<button type="button" class="'+(infMode==='list'?'on':'')+'" onclick="infMode=\'list\';renderInfoma()">'+IC.list+'リスト</button></span>';
+  var legend='<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">カレンダーの見方</span>'+
+    '<span class="stag" style="background:#F6EEFF;box-shadow:inset 0 0 0 1.5px #a855f7;color:#4c1d95"><span class="ibadge" style="margin-right:4px">放送</span>放送日</span>'+
+    '<span class="stag" style="background:#FFF2CC"><span class="ibadge k3" style="margin-right:4px">撮影</span>撮影・収録日／配信日</span>'+
+    '<span class="stag" style="background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2)"><span class="dlabel" style="margin-right:4px">期限</span>台本FIX・確認の期限</span>'+
+    '<span class="stag" style="background:#D9EAD3">塗り色＝進行ステータス</span></div>'+
+    (infCase==='ALL'?'<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">バッジの色</span>'+
+      infCases().map(function(n){ return '<span class="lgi"><i class="ld" style="background:'+scColor(n)+'"></i>'+esc(n)+'</span>'; }).join('')+'</div>':'');
+  var body = infMode==='cal'
+    ? '<div class="panel">'+legend+infCalHtml()+'</div>'+infDayPanelHtml()
+    : sh3('放送予定 — 期日が近い順')+
+      '<div class="panel" style="padding:4px 16px 12px">'+(infAirList(up,infCase!=='ALL')||'<p class="note" style="margin:10px 0">今後の放送予定はまだ入っていません。</p>')+'</div>'+
+      (past.length?sh3('放送済み — 新しい順（'+past.length+'件）')+'<div class="panel" style="padding:4px 16px 12px">'+infAirList(past,infCase!=='ALL')+'</div>':'');
   $('view').innerHTML=tiles+
-    '<div class="panel" style="margin-bottom:14px"><div class="bar">'+sw+
+    '<div class="panel" style="margin-bottom:14px"><div class="bar">'+sw+mode+
     '<span class="spacer"></span><span class="note" style="margin:0">スクール×インフォマ管理シート</span></div></div>'+
-    sh3('放送予定 — 期日が近い順')+
-    '<div class="panel" style="padding:4px 16px 12px">'+(infAirList(up,infCase!=='ALL')||'<p class="note" style="margin:10px 0">今後の放送予定はまだ入っていません。</p>')+'</div>'+
+    body+
     sh3('台本・配信の進行管理 — 遅れている順')+infProgTable(prog)+
-    (past.length?sh3('放送済み — 新しい順（'+past.length+'件）')+'<div class="panel" style="padding:4px 16px 12px">'+infAirList(past,infCase!=='ALL')+'</div>':'')+
     '<p class="note">出典＝<b>スクール×インフォマ管理シート</b>（④放送カレンダー／⑤台本進行管理／⑥配信進行管理）。ステータス・期限・アラートはシート側の入力と自動計算をそのまま表示しています。</p>';
 }
 
