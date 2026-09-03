@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<link rel="icon" type="image/svg+xml" href="logos/wein-mark.svg">
-<link rel="apple-touch-icon" href="logos/wein-mark.svg">
-<meta name="theme-color" content="#7c5cf0">
+<link rel="icon" type="image/png" href="logos/yoake-icon.png">
+<link rel="apple-touch-icon" href="logos/yoake-icon.png">
+<meta name="theme-color" content="#0d0d0d">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
-<title>WEIN スクール横串オーガニック｜スケジュール & KPI進捗</title>
+<title>YOAKE スクール横串オーガニック｜スケジュール & KPI進捗</title>
 <style>
   :root{
     --bg:#eef1f5; --surface:#ffffff; --surface-2:#f4f6f9; --surface-3:#e7ebf1;
@@ -345,9 +345,8 @@ footer{font-size:10.5px;}
 }
 /* ---- v18: ロゴ＋レイアウトの伸び止め ---- */
 .brand{display:inline-flex;align-items:center;gap:9px;border:none;background:transparent;padding:0;text-decoration:none;color:inherit;}
-.bmark{display:block;border-radius:9px;box-shadow:0 2px 9px rgba(99,82,230,.34);flex:none;}
-.bname{font-family:"Inter",var(--sans);font-size:12.5px;font-weight:800;letter-spacing:.2em;color:var(--ink);}
-.sidebrand{gap:10px;padding:2px 6px 14px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.bmark{display:block;border-radius:7px;background:#000;box-shadow:0 2px 8px rgba(0,0,0,.3);flex:none;}
+.sidebrand{flex-direction:column;align-items:flex-start;gap:9px;padding:2px 6px 14px;border-bottom:1px solid var(--border);margin-bottom:4px;}
 .sidebrand .bt{color:var(--ink);}
 
 /* 横伸び対策：中身の少ないブロックが画面幅いっぱいに間延びしないよう上限を持たせる */
@@ -446,8 +445,7 @@ body.wideview .wrap{max-width:1200px;}
 <div class="wrap">
   <header>
     <button type="button" class="brand" onclick="goTab('schools')" title="ホームへ">
-      <img class="bmark" src="logos/wein-mark.svg" alt="WEIN" width="30" height="30">
-      <span class="bname">WEIN</span>
+      <img class="bmark" src="logos/yoake-mark.png" alt="YOAKE" width="83" height="32">
     </button>
     <div><h1>スクール横串オーガニック｜スケジュール & KPI進捗</h1><div class="sub" id="subline"></div></div>
     <div class="spacer"></div>
@@ -456,7 +454,7 @@ body.wideview .wrap{max-width:1200px;}
   <div class="tabs" id="tabs"></div>
   <div id="view"></div>
   <footer>
-    WEIN スクール横串オーガニック ─ 全スクール・案件の投稿スケジュールとKPI進捗の共有ボード（閲覧専用）。<br>
+    YOAKE スクール横串オーガニック ─ 全スクール・案件の投稿スケジュールとKPI進捗の共有ボード（閲覧専用）。<br>
     データはWEIN_SNS運用スケジュール／KPI横断まとめ／スクール×インフォマ管理シートのスナップショットです。投稿スケジュールは直近1週間＋今後の予定のみ表示（過去分は省略）。
   </footer>
 </div>
@@ -540,7 +538,7 @@ function goSchool(n){ curTab='schools'; curSchool=n; render(); window.scrollTo(0
 function renderSide(){
   var el=$('side'); if(!el) return;
   function nb(on,click,inner){ return '<button type="button" class="'+(on?'on':'')+'" onclick="'+click+'">'+inner+'</button>'; }
-  var h='<div class="sidebrand"><img class="bmark" src="logos/wein-mark.svg" alt="WEIN" width="30" height="30">'+
+  var h='<div class="sidebrand"><img class="bmark" src="logos/yoake-mark.png" alt="YOAKE" width="96" height="37">'+
     '<span class="bt">スクール横串<br>オーガニック</span></div>';
   h+='<div class="snav"><div class="nl">メニュー</div>'+
     nb(curTab==='schools'&&!curSchool,"goTab('schools')",IC.school+'<span class="tx">スクールハブ</span>')+
@@ -1023,7 +1021,7 @@ function tableHtml(cases){
 }
 function reportText(all){
   var L=[];
-  L.push('■ WEIN スクール横串オーガニック KPI報告（'+B.kpiBasis+'）');
+  L.push('■ YOAKE スクール横串オーガニック KPI報告（'+B.kpiBasis+'）');
   L.push('');
   ['bad','warn','good','none'].forEach(function(st){
     var cs=all.filter(function(c){ return c._s.st===st; });
