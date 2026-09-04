@@ -438,6 +438,41 @@ body.wideview .wrap{max-width:1200px;}
 .dayp .fixrow:last-child{border-bottom:none;}
 .dayp .close{margin-left:auto;}
 .dpempty{padding:6px 18px 16px;}
+
+/* ---- v24: 週表示（スイムレーン）＝案件×7日。月表示は俯瞰、週表示は実務用 ---- */
+.wkhead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.wkhead .wm{font-size:16px;font-weight:800;min-width:190px;letter-spacing:-.01em;}
+.wkwrap{overflow-x:auto;}
+.wk{min-width:1080px;display:grid;grid-template-columns:162px repeat(7,minmax(0,1fr));gap:1px;background:var(--border);}
+.wkh{background:var(--surface-2);padding:7px 4px 8px;text-align:center;min-width:0;}
+.wkh .wd{display:block;font-size:9.5px;font-weight:800;color:var(--ink-3);letter-spacing:.12em;}
+.wkh .wn{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;margin-top:2px;
+  font-family:"Inter",var(--mono);font-size:14px;font-weight:800;border-radius:999px;}
+.wkh.sun .wd{color:var(--bad-ink);} .wkh.sat .wd{color:var(--accent-ink);}
+.wkh.today .wn{background:var(--grad);color:#fff;}
+.wkh.corner{background:var(--surface-2);position:sticky;left:0;z-index:3;}
+.wklbl{background:var(--surface-2);padding:9px 10px;display:flex;align-items:center;gap:8px;min-width:0;
+  position:sticky;left:0;z-index:2;border-right:1px solid var(--border);}
+.wklbl .wnm{font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wkrow-empty .wklbl .wnm{color:var(--ink-3);font-weight:700;}
+.wkc{background:var(--surface);padding:6px 6px 7px;min-height:76px;display:flex;flex-direction:column;gap:4px;min-width:0;cursor:pointer;}
+.wkc.wknd{background:color-mix(in srgb,var(--surface) 94%,var(--accent) 6%);}
+.wkc.today{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 45%,transparent);}
+.wkc.sel{box-shadow:inset 0 0 0 2px var(--accent);}
+.wkrow-empty .wkc{min-height:34px;}
+.wke{border-radius:6px;padding:4px 7px;font-size:11.5px;line-height:1.5;font-weight:700;color:#2b2e33;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;min-width:0;}
+.wke .wkt{font-family:"Inter",var(--mono);font-size:10px;font-weight:800;opacity:.72;margin-right:4px;}
+.wke.infm{background:#F6EEFF;box-shadow:inset 0 0 0 1.5px #a855f7;color:#4c1d95;}
+.wke.draft{background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2);font-weight:600;}
+.wke.done{opacity:.68;}
+@media (prefers-color-scheme:dark){ .wke.infm{background:#2a1b3d;color:#e9d5ff;} }
+
+/* 月表示（すべて表示時）＝件数サマリーに切り替えて俯瞰に徹する */
+.csum{display:flex;align-items:center;gap:6px;border-radius:6px;padding:3px 7px;background:var(--surface-2);font-size:11px;font-weight:700;min-width:0;}
+.csum .cs-d{width:8px;height:8px;border-radius:2px;flex:none;}
+.csum .cs-n{margin-left:auto;font-family:"Inter",var(--mono);font-weight:800;color:var(--ink-2);}
+.csum .cs-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
 </style>
 </head>
 <body>
@@ -478,11 +513,11 @@ function logoTile(name,h,seg,w){
  return '<span class="ltile mono'+(seg==='talent'?' tl':'')+'" style="height:'+h+'px;width:'+h+'px;font-size:'+Math.round(h*0.44)+'px">'+esc(name.charAt(0))+'</span>';
 }
 B.sched.forEach(function(c){ if(!c.seg) c.seg = SCHOOL_SET[c.name]?'school':'talent'; });
-var curTab='schools', schedMode='cal', curCase='ALL', kpiSeg='all', curSchool=null;
+var curTab='schools', schedMode='week', curCase='ALL', kpiSeg='all', curSchool=null;
 var kpiView='card', kpiFilter='', kpiSort='asc';
-var calCur=null, daySel=null;
+var calCur=null, daySel=null, weekCur=null;
 var INF=(B.infoma&&B.infoma.air)?B.infoma:{air:[],prog:[]};
-var infShow=true, infCase='ALL', infMode='cal', infCal=null, infDaySel=null;
+var infShow=true, draftShow=false, infCase='ALL', infMode='cal', infCal=null, infDaySel=null;
 var STATUS_COLORS={'撮影':'#FCE5CD','編集':'#FFF2CC','修正中':'#F4CCCC','社内確認中':'#D9D2E9','納品':'#CFE2F3','投稿済':'#D9D9D9','企画/台本':'#DDEBF7','共通':'#ECEFF3',
   '台本FIX済':'#D9EAD3','確認OK':'#D9EAD3','完成':'#D9EAD3','初稿待ち':'#FFF2CC','制作中':'#FFF2CC','校正確認中':'#D9D2E9','未着手':'#F4CCCC'};
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -497,7 +532,8 @@ var IC={
  list: svgw('<path d="M8.5 6h12M8.5 12h12M8.5 18h12M3.8 6h.01M3.8 12h.01M3.8 18h.01"/>'),
  chevL: svgw('<path d="M14.5 6l-6 6 6 6"/>'),
  chevR: svgw('<path d="M9.5 6l6 6-6 6"/>'),
- tv: svgw('<rect x="2.5" y="7.5" width="19" height="13" rx="2"/><path d="M8 3l4 4.5L16 3"/>')
+ tv: svgw('<rect x="2.5" y="7.5" width="19" height="13" rx="2"/><path d="M8 3l4 4.5L16 3"/>'),
+ week: svgw('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 10v9M15 10v9"/>')
 };
 function infAlertCls(a){ return a==='超過'?'bad':(a==='要注意'||a==='注意')?'warn':(a==='完了'||a==='OK')?'good':'none'; }
 
@@ -722,12 +758,17 @@ function renderSched(){
     '<button type="button" class="'+(curCase==='ALL'?'on':'')+'" onclick="setCase(\'ALL\')">'+IC.all+'すべて</button>'+
     '<button type="button" class="'+(curCase==='SCHOOL'?'on':'')+'" onclick="setCase(\'SCHOOL\')">'+IC.school+'スクール全体</button>'+
     '<button type="button" class="'+(curCase==='TALENT'?'on':'')+'" onclick="setCase(\'TALENT\')">'+IC.users+'非スクール全体</button></span>';
-  var mode='<span class="switch"><button type="button" class="'+(schedMode==='cal'?'on':'')+'" onclick="schedMode=\'cal\';renderSched()">'+IC.cal+'カレンダー</button>'+
-    '<button type="button" class="'+(schedMode==='list'?'on':'')+'" onclick="schedMode=\'list\';renderSched()">'+IC.list+'リスト</button></span>';
-  var infBtn='<span class="switch"><button type="button" class="tl'+(infShow?' on':'')+'" onclick="infShow=!infShow;renderSched()">'+IC.tv+'インフォマ放送 '+(infShow?'表示中':'非表示')+'</button></span>';
+  var mode='<span class="switch">'+
+    '<button type="button" class="'+(schedMode==='week'?'on':'')+'" onclick="schedMode=\'week\';daySel=null;renderSched()">'+IC.week+'週</button>'+
+    '<button type="button" class="'+(schedMode==='cal'?'on':'')+'" onclick="schedMode=\'cal\';daySel=null;renderSched()">'+IC.cal+'月</button>'+
+    '<button type="button" class="'+(schedMode==='list'?'on':'')+'" onclick="schedMode=\'list\';daySel=null;renderSched()">'+IC.list+'リスト</button></span>';
+  var infBtn='<span class="switch"><button type="button" class="tl'+(infShow?' on':'')+'" onclick="infShow=!infShow;renderSched()">'+IC.tv+'インフォマ放送 '+(infShow?'表示中':'非表示')+'</button>'+
+    '<button type="button" class="'+(draftShow?'on':'')+'" onclick="draftShow=!draftShow;renderSched()">初稿締切 '+(draftShow?'表示中':'非表示')+'</button></span>';
   var rows=allRows();
-  var body = schedMode==='cal' ? calHtml(rows) : (listHtml(rows)+(infShow?infListHtml():''));
-  var dayp = schedMode==='cal' ? dayPanelHtml(rows) : '';
+  var body = schedMode==='week' ? weekHtml(rows)
+           : schedMode==='cal'  ? calHtml(rows)
+           : (listHtml(rows)+(infShow?infListHtml():''));
+  var dayp = (schedMode==='list') ? '' : dayPanelHtml(rows);
   $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+infBtn+'</div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+'<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">色＝制作状況</span>'+
@@ -746,7 +787,7 @@ function dayBuckets(rows,y,m){
   var by={};
   function push(d,o){ if(d&&d.getFullYear()===y&&d.getMonth()===m)(by[d.getDate()]=by[d.getDate()]||[]).push(o); }
   rows.forEach(function(r){ push(pd(r.date),{k:'post',r:r}); });
-  rows.forEach(function(r){ if(r.draft&&r.draft!==r.date) push(pd(r.draft),{k:'draft',r:r}); });
+  if(draftShow) rows.forEach(function(r){ if(r.draft&&r.draft!==r.date) push(pd(r.draft),{k:'draft',r:r}); });
   if(infShow) infFiltered().forEach(function(a){ push(pd(a[0]),{k:'inf',a:a}); });
   var rank={inf:0,post:1,draft:2};
   Object.keys(by).forEach(function(d){
@@ -782,6 +823,81 @@ function chipHtml(e){
     '<span class="ct">'+(r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+
     (timeChip(r.time)?'<span class="ctime">'+esc(timeChip(r.time))+'</span>':'')+esc(r.title)+'</span></div>';
 }
+
+/* ===== 週表示（スイムレーン）＝行=案件／列=7日。1マスあたり1〜3件になるので折り返して全文出せる ===== */
+function wkStart(d){ var x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-x.getDay()); return x; }
+function weekShift(n){ weekCur=new Date(weekCur); weekCur.setDate(weekCur.getDate()+n*7); daySel=null; renderSched(); }
+function weekToday(){ weekCur=wkStart(new Date()); daySel=null; renderSched(); }
+function scopedCases(){
+  return B.sched.filter(function(c){
+    if(curCase==='SCHOOL') return c.seg==='school';
+    if(curCase==='TALENT') return c.seg==='talent';
+    if(!isAgg()) return c.name===curCase;
+    return true;
+  });
+}
+function wkChip(e){
+  if(e.k==='inf'){
+    return '<div class="wke infm" title="インフォマ放送：'+esc(e.a[2])+'"><span class="ibadge">放送</span>'+esc(e.a[2])+'</div>';
+  }
+  var r=e.r;
+  if(e.k==='draft'){
+    return '<div class="wke draft" title="初稿締切：'+esc(r.title)+'（投稿予定 '+esc(r.date)+'）"><span class="dlabel">初稿</span>'+esc(r.title)+'</div>';
+  }
+  var c=STATUS_COLORS[r.status]||'#e8ecf2', tc=timeChip(r.time);
+  return '<div class="wke'+(r.status==='投稿済'?' done':'')+'" style="background:'+c+'" '+
+    'title="'+esc(r.title)+'（'+esc(r.status||'予定')+(r.editor?'・'+esc(r.editor):'')+'）">'+
+    (r.status==='投稿済'?'<span class="dmk"></span>':r.status==='納品'?'<span class="dmk half"></span>':'')+
+    (tc?'<span class="wkt">'+esc(tc)+'</span>':'')+mediaBadge(r.media)+' '+esc(r.title)+'</div>';
+}
+function weekHtml(rows){
+  if(!weekCur) weekCur=wkStart(new Date());
+  var days=[],i;
+  for(i=0;i<7;i++){ var d=new Date(weekCur); d.setDate(d.getDate()+i); days.push(d); }
+  var tnow=new Date(); tnow.setHours(0,0,0,0);
+  function dk(d){ return d.getMonth()+'/'+d.getDate(); }
+  var by={};
+  function push(sc,d,o){ if(!d) return; var k=sc+'|'+dk(d); (by[k]=by[k]||[]).push(o); }
+  rows.forEach(function(r){ push(r.sc,pd(r.date),{k:'post',r:r}); });
+  if(draftShow) rows.forEach(function(r){ if(r.draft&&r.draft!==r.date) push(r.sc,pd(r.draft),{k:'draft',r:r}); });
+  if(infShow) infFiltered().forEach(function(a){ push(a[1],pd(a[0]),{k:'inf',a:a}); });
+  var rank={inf:0,post:1,draft:2};
+  Object.keys(by).forEach(function(k){ by[k].sort(function(a,b){
+    if(rank[a.k]!==rank[b.k]) return rank[a.k]-rank[b.k];
+    var ta=(a.r&&a.r.time)||'',tb=(b.r&&b.r.time)||'';
+    if(!ta&&tb) return 1; if(ta&&!tb) return -1; return ta<tb?-1:ta>tb?1:0; }); });
+
+  var head='<div class="wkh corner"></div>';
+  days.forEach(function(d){
+    var isT=d.getTime()===tnow.getTime(), w=d.getDay();
+    head+='<div class="wkh'+(w===0?' sun':w===6?' sat':'')+(isT?' today':'')+'">'+
+      '<span class="wd">'+'日月火水木金土'.charAt(w)+'</span>'+
+      '<span class="wn">'+(d.getMonth()+1)+'/'+d.getDate()+'</span></div>';
+  });
+  var body='',total=0;
+  scopedCases().forEach(function(c){
+    var cells='',n=0;
+    days.forEach(function(d){
+      var list=by[c.name+'|'+dk(d)]||[]; n+=list.length;
+      var key=d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
+      var isT=d.getTime()===tnow.getTime(), w=d.getDay();
+      cells+='<div class="wkc'+((w===0||w===6)?' wknd':'')+(isT?' today':'')+(daySel===key?' sel':'')+
+        '" onclick="selDay(\''+key+'\')">'+list.map(wkChip).join('')+'</div>';
+    });
+    total+=n;
+    body+='<div style="display:contents" class="'+(n?'':'wkrow-empty')+'">'+
+      '<div class="wklbl">'+logoTile(c.name,20,c.seg,46)+'<span class="wnm">'+esc(c.name)+'</span></div>'+cells+'</div>';
+  });
+  var s0=days[0],s6=days[6];
+  var label=(s0.getMonth()+1)+'/'+s0.getDate()+'（'+'日月火水木金土'.charAt(s0.getDay())+'）〜 '+(s6.getMonth()+1)+'/'+s6.getDate()+'（'+'日月火水木金土'.charAt(s6.getDay())+'）';
+  return '<div class="wkhead"><button class="btn" type="button" onclick="weekShift(-1)">'+IC.chevL+'前週</button>'+
+    '<span class="wm">'+label+'</span>'+
+    '<button class="btn" type="button" onclick="weekShift(1)">翌週'+IC.chevR+'</button>'+
+    '<button class="btn" type="button" onclick="weekToday()">今週</button>'+
+    '<span class="spacer"></span><span class="note" style="margin:0">この週 '+total+'件 ／ 行＝案件・色＝制作状況。日付をクリックで詳細</span></div>'+
+    '<div class="wkwrap"><div class="wk">'+head+body+'</div></div>';
+}
+
 function calHtml(rows){
   var y=calCur.y,m=calCur.m;
   var by=dayBuckets(rows,y,m);
@@ -792,8 +908,20 @@ function calHtml(rows){
   for(var i=0;i<first;i++)cells+='<div class="cday out"></div>';
   for(var d=1;d<=days;d++){
     var list=by[d]||[];
-    var shown=list.slice(0,MAXCHIP).map(chipHtml).join('');
-    var over=list.length-MAXCHIP;
+    var shown, over=0;
+    if(isAgg()&&list.length>MAXCHIP){
+      var g={},ord=[];
+      list.forEach(function(e){ var nm=e.k==='inf'?e.a[1]:e.r.sc; if(!g[nm]){g[nm]=0;ord.push(nm);} g[nm]++; });
+      shown=ord.slice(0,5).map(function(nm){
+        return '<div class="csum"><span class="cs-d" style="background:'+scColor(nm)+'"></span>'+
+          '<span class="cs-t">'+esc(nm)+'</span><span class="cs-n">'+g[nm]+'</span></div>';
+      }).join('');
+      over=ord.length>5?(ord.length-5):0;
+      if(over){ shown+='<button type="button" class="cmore">＋ほか '+over+'案件</button>'; over=0; }
+    } else {
+      shown=list.slice(0,MAXCHIP).map(chipHtml).join('');
+      over=list.length-MAXCHIP;
+    }
     var key=y+'-'+m+'-'+d;
     var dow=(first+d-1)%7;
     cells+='<div class="cday'+(thisMonth&&tnow.getDate()===d?' today':'')+((dow===0||dow===6)?' wk':'')+
@@ -813,7 +941,7 @@ function selDay(k){ daySel=(daySel===k?null:k); renderSched();
 function dayPanelHtml(rows){
   if(!daySel) return '';
   var p=daySel.split('-'),y=+p[0],m=+p[1],d=+p[2];
-  if(m!==calCur.m||y!==calCur.y) return '';
+  if(schedMode==='cal'&&(m!==calCur.m||y!==calCur.y)) return '';
   var list=(dayBuckets(rows,y,m)[d])||[];
   var dt=new Date(y,m,d);
   var head='<div class="dph"><span class="dpd">'+(m+1)+'月'+d+'日（'+'日月火水木金土'.charAt(dt.getDay())+'）</span>'+
