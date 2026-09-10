@@ -21,7 +21,7 @@ SCHED_TABS = [
     ("CREATOR'ZZ", "school", "CREATOR’ZZ"),
     ("RVA", "school", "RVA"),
     ("AI+", "school", "AI＋"),
-    ("MERISE", "school", "MERIZE(占い)"),
+    ("MERISE", "school", "MERISE(占い)"),  # 2026-09-10 シート側タブ名が MERIZE→MERISE に改称（400 Bad Request対策）
     ("REAL VALUE", "talent", "RealValue"),
     ("LASTCALL", "talent", "LASTCALL"),
     ("星乃リア", "talent", "星乃リアさん運用"),
