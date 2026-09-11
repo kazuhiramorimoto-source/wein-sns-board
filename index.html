@@ -588,6 +588,22 @@ th{font-size:10.5px;}
 #lockform button{border:none;border-radius:10px;background:linear-gradient(135deg,#7E22CE,#8b5cf6);color:#fff;font-size:14.5px;font-weight:800;padding:11px 20px;cursor:pointer;}
 .lockrem{display:flex;align-items:center;justify-content:center;gap:7px;color:#97a1af;font-size:12.5px;margin-top:16px;cursor:pointer;}
 #lockerr{color:#f87171;font-size:13.5px;font-weight:700;margin:14px 0 0;min-height:1.2em;}
+
+/* 変更監視パネル（2026-09-11） */
+.wpanel{margin-bottom:14px;}
+.wbar b{font-size:13.5px;}
+.wcount{font-size:12.5px;font-weight:800;color:var(--ink-2);padding:2px 8px;border-radius:3px;background:var(--surface-2,rgba(0,0,0,.04));}
+.wcount.has{background:var(--bad-soft);color:var(--bad-ink);}
+.wat{font-size:11.5px;color:var(--ink-3);margin-left:auto;}
+.wrow{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 16px;border-top:1px dashed var(--border);font-size:13px;}
+.wkind{flex:none;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:3px;background:var(--bad-soft);color:var(--bad-ink);}
+.wkind.link,.wkind.pack{background:var(--warn-soft);color:var(--warn-ink);}
+.wcase{flex:none;font-weight:800;color:var(--ink-2);padding-left:6px;min-width:84px;}
+.wdate{flex:none;font-family:"Inter",var(--mono);font-weight:800;color:var(--ink-2);width:44px;}
+.wtitle{font-weight:700;color:var(--ink);}
+.wdet{color:var(--ink-2);font-size:12px;word-break:break-all;}
+.wnone{padding:10px 16px;font-size:13px;color:var(--ink-2);}
+.wfoot{padding:8px 16px 10px;font-size:11.5px;color:var(--ink-3);line-height:1.7;border-top:1px solid var(--border);}
 </style>
 <div id="lock">
   <div class="lockcard">
@@ -604,7 +620,7 @@ th{font-size:10.5px;}
 </div>
 <script>
 (function(){
-var APP_SRC='app.js?v=202609081030', LS_KEY='yoakeBoardKey', busy=false;
+var APP_SRC='app.js?v=202609110730', LS_KEY='yoakeBoardKey', busy=false;
 function $(id){return document.getElementById(id);}
 function err(m){var e=$('lockerr'); if(e)e.textContent=m||'';}
 function b64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a.buffer;}

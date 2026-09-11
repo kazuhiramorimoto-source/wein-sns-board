@@ -302,7 +302,7 @@ function renderSched(){
            : schedMode==='cal'  ? calHtml(rows)
            : (listHtml(rows)+(infShow?infListHtml():''));
   var dayp = (schedMode==='list') ? '' : dayPanelHtml(rows);
-  $('view').innerHTML='<div class="panel"><div class="bar">'+segAll+mode+infBtn+'</div>'+
+  $('view').innerHTML=watchHtml()+'<div class="panel"><div class="bar">'+segAll+mode+infBtn+'</div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">スクール</span><span class="switch">'+segBtns('school')+'</span></span></div>'+
     '<div class="bar" style="padding-top:8px;padding-bottom:8px"><span class="segrow"><span class="seglbl">非スクール</span><span class="switch">'+segBtns('talent')+'</span></span></div>'+'<div class="bar" style="padding-top:8px;padding-bottom:8px;row-gap:6px"><span class="seglbl">色＝制作状況</span>'+
     '<span class="stag" style="background:#E7F0FA">企画</span><span class="stag" style="background:#DDEBF7">台本</span><span class="stag" style="background:#FCE5CD">撮影</span><span class="stag" style="background:#FFF2CC">編集</span><span class="stag" style="background:#F4CCCC">修正中</span><span class="stag" style="background:#D9D2E9">社内確認中</span><span class="stag" style="background:#CFE2F3">納品=投稿待ち</span><span class="stag" style="background:#D9D9D9;color:#606060">投稿済=完了</span><span class="stag" style="background:transparent;border:1.5px dashed var(--border-strong);color:var(--ink-2)"><span class="dlabel" style="margin-right:4px">初稿</span>点線＝初稿締切</span><span class="stag" style="background:#F6EEFF;box-shadow:inset 0 0 0 1.5px #a855f7;color:#4c1d95"><span class="ibadge" style="margin-right:4px">放送</span>紫枠＝インフォマ放送</span></div>'+
@@ -318,6 +318,36 @@ function renderSched(){
     '<span class="lgi">'+chkHtml('投稿済')+'投稿済＝完了</span></div>'+body+'</div>'+dayp+
     '<p class="note">チップの<b>塗り色＝制作状況</b>（運用スケジュールシートの「状況」と同じ色）、<b>左端の縦線＝スクール／案件</b>の色です。<br>'+
     'カレンダーのマスは1件1行で表示し、<b>日付をクリックすると担当・媒体・投稿リンクまで含めた詳細</b>がその下に開きます（4件以上の日は「＋ほか◯件」）。</p>';
+}
+
+/* 変更監視：毎朝のスナップショット比較で「前日にあって今日は無い」行・リンク・完パケを表示
+   （シートには一切書き込まない。編集者はシートの「版の履歴」／セル右クリック「編集履歴を表示」で確認） */
+var WKIND={row:'行が消えた',link:'リンクが消えた',pack:'完パケが消えた',rename:'タイトル変更'};
+function watchHtml(){
+  var W=B.watch; if(!W) return '';
+  var items=(W.items||[]).filter(function(it){
+    if(curCase==='ALL') return true;
+    if(curCase==='SCHOOL') return !!SCHOOL_SET[it.case];
+    if(curCase==='TALENT') return !SCHOOL_SET[it.case];
+    return it.case===curCase;
+  });
+  var head='<div class="bar wbar"><span class="seglbl">変更監視</span>'+
+    '<b>前日'+(W.prevDate?'（'+esc(W.prevDate.slice(5).replace('-','/'))+'）':'')+'との比較で消えた行・リンク</b>'+
+    '<span class="wcount'+(items.length?' has':'')+'">'+(W.prevDate?items.length+'件':'初回のため比較なし')+'</span>'+
+    (W.at?'<span class="wat">確認 '+esc(W.at.replace(/^\d{4}-/,'').replace('-','/').replace(' JST',''))+'</span>':'')+'</div>';
+  var body;
+  if(W.error) body='<div class="wnone">監視データを取得できませんでした（'+esc(W.error)+'）</div>';
+  else if(!W.prevDate) body='<div class="wnone">明日の朝から前日比の検知が始まります。</div>';
+  else if(!items.length) body='<div class="wnone">消えた行・リンクはありません。</div>';
+  else body=items.slice(0,60).map(function(it){
+    return '<div class="wrow"><span class="wkind '+esc(it.kind)+'">'+(WKIND[it.kind]||it.kind)+'</span>'+
+      '<span class="wcase" style="border-left:3px solid '+scColor(it.case)+'">'+esc(it.case)+'</span>'+
+      '<span class="wdate">'+esc(it.date||'--')+'</span>'+
+      '<span class="wtitle">'+esc(it.title)+'</span>'+
+      (it.detail?'<span class="wdet">'+esc(it.detail)+'</span>':'')+'</div>';
+  }).join('')+(items.length>60?'<div class="wnone">…ほか'+(items.length-60)+'件</div>':'');
+  return '<div class="panel wpanel">'+head+body+
+    '<div class="wfoot">毎朝の自動更新でシート全タブを保存し、前日と突き合わせています。消えた行を戻したいときは森本まで（保存データから復元できます）。誰の操作かはシートのセル右クリック→「編集履歴を表示」で分かります。</div></div>';
 }
 
 var SCHOOL_COLORS={"HERO'ZZ":'#990000',"CREATOR'ZZ":'#1C4587','RVA':'#B45F06','AI+':'#38761D','MERISE':'#351C75',

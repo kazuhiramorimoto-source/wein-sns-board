@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  issues: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,6 +21,16 @@ jobs:
           GOOGLE_OAUTH: ${{ secrets.GOOGLE_OAUTH }}
           BOARD_PASSWORD: ${{ secrets.BOARD_PASSWORD }}
         run: python scripts/build_data.py
+      - name: Notify losses (Issue with counts only)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          f=snapshots/watch_summary.txt
+          if [ -s "$f" ]; then
+            gh issue create --title "⚠️ スケジュール変更監視 $(date +'%Y-%m-%d'): 前日比で消えた行・リンクあり" \
+              --body "$(printf '件数のみ（内容はボードのスケジュールタブ「変更監視」で確認）:\n\n%s\n\n%s' "$(cat $f)" 'https://tinyurl.com/wein-sns-board')" || true
+          fi
       - name: Commit & push if changed
         run: |
           git config user.name 'board-bot'

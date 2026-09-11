@@ -283,11 +283,163 @@ def build_concepts():
     return out
 
 
+# ===== スケジュール日次スナップショット＋変更監視（2026-09-11） =====
+# 背景: 「入れたリンク／行が消える」報告が繰り返されるが、Googleの版履歴はAPI経由だと
+# 1〜2日で間引かれて追跡できない。毎朝の読み取りついでに全運用タブを暗号化して残し、
+# 前日比で「消えた行・リンク・完パケ」を検出してボードに出す（シートへの書き込みは一切しない）。
+SNAP_KEEP_DAYS = 120
+LOSS_STATUS = {"撮影", "編集", "修正中", "社内確認中", "納品", "投稿済"}
+
+
+def _kdf(pw, salt, it):
+    import hashlib
+    return hashlib.pbkdf2_hmac("sha256", pw.encode("utf-8"), salt, it, 32)
+
+
+def encrypt_text(text):
+    """gzip→AES-256-GCM。data.enc.jsと同じ鍵導出（同じパスワードで復号できる）。"""
+    import base64, gzip, secrets
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    pw, it = board_password(), 300000
+    salt, iv = secrets.token_bytes(16), secrets.token_bytes(12)
+    ct = AESGCM(_kdf(pw, salt, it)).encrypt(iv, gzip.compress(text.encode("utf-8")), None)
+    b64 = lambda b: base64.b64encode(b).decode("ascii")
+    return {"v": 1, "gz": 1, "it": it, "salt": b64(salt), "iv": b64(iv), "ct": b64(ct)}
+
+
+def decrypt_blob(d):
+    import base64, gzip
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    pw = board_password()
+    raw = AESGCM(_kdf(pw, base64.b64decode(d["salt"]), d["it"])).decrypt(
+        base64.b64decode(d["iv"]), base64.b64decode(d["ct"]), None)
+    return (gzip.decompress(raw) if d.get("gz") else raw).decode("utf-8")
+
+
+def sheet_tabs(sheet_id):
+    global TOKEN
+    if TOKEN is None:
+        TOKEN = access_token()
+    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}?fields=sheets.properties(title,hidden)"
+    req = urllib.request.Request(url, headers={"Authorization": "Bearer " + TOKEN})
+    return [s["properties"]["title"] for s in json.load(urllib.request.urlopen(req))["sheets"]
+            if not s["properties"].get("hidden")]
+
+
+def index_rows(rows):
+    """タイトル→{date,status,links{ラベル:値}} 。ヘッダー検出は build_sched と同じ方式。"""
+    hrow, idx, links = detect_header(rows)
+    out = {}
+    if hrow < 0 or "title" not in idx:
+        return out
+    seen = {}
+    lab = []
+    for i, l in links:  # 同名ラベル（リンク×2など）は #2 で区別
+        seen[l] = seen.get(l, 0) + 1
+        lab.append((i, l if seen[l] == 1 else f"{l}#{seen[l]}"))
+    for r in rows[hrow + 1:]:
+        t = cell(r, idx["title"]) if r else ""
+        if not t or t in out:
+            continue
+        out[t] = {"date": cell(r, idx["date"]) if "date" in idx else "",
+                  "status": cell(r, idx["status"]) if "status" in idx else "",
+                  "links": {l: cell(r, i) for i, l in lab}}
+    return out
+
+
+def diff_tab(case, prev_rows, cur_rows):
+    p, c = index_rows(prev_rows), index_rows(cur_rows)
+    items = []
+    link_owner = {v: t for t, cv in c.items() for v in cv["links"].values() if v.startswith("http")}
+    for t, pv in p.items():
+        if t not in c:
+            nlink = sum(1 for v in pv["links"].values() if v.startswith("http"))
+            pack = pv["links"].get("完パケ", "")
+            owners = {link_owner.get(v) for v in pv["links"].values() if v.startswith("http")}
+            if nlink and len(owners) == 1 and None not in owners:
+                # リンクがそっくり別タイトルに付いている＝タイトル改名（消失ではない）
+                items.append({"case": case, "kind": "rename", "date": pv["date"], "title": t, "detail": "→ " + owners.pop()})
+                continue
+            if nlink or pack or pv["status"] in LOSS_STATUS:
+                det = []
+                if nlink:
+                    det.append(f"リンク{nlink}件")
+                if pack:
+                    det.append("完パケあり")
+                if pv["status"]:
+                    det.append(pv["status"])
+                items.append({"case": case, "kind": "row", "date": pv["date"], "title": t, "detail": "・".join(det)})
+            continue
+        cv = c[t]
+        for l, v in pv["links"].items():
+            nv = cv["links"].get(l, "")
+            if v.startswith("http") and not nv:
+                items.append({"case": case, "kind": "link", "date": cv["date"] or pv["date"], "title": t, "detail": f"{l}: {v}"})
+            elif l.startswith("完パケ") and v and not nv:
+                items.append({"case": case, "kind": "pack", "date": cv["date"] or pv["date"], "title": t, "detail": f"完パケ: {v}"})
+    return items
+
+
+def build_snapshot_watch():
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sdir = os.path.join(root, "snapshots")
+    os.makedirs(sdir, exist_ok=True)
+    case_of = {t[2]: t[0] for t in SCHED_TABS}
+    titles = sheet_tabs(SCHED_ID)
+    vals = fetch(SCHED_ID, [f"'{t}'!A1:Z1000" for t in titles])
+    tabs = {}
+    for t, rows in zip(titles, vals):
+        hrow, idx, _ = detect_header(rows)
+        if hrow < 0 or "title" not in idx:
+            continue  # 運用スケジュール形式でないタブ（肩書/雛形など）は対象外
+        tabs[t] = rows[:hrow + 1] + [r for r in rows[hrow + 1:] if cell(r, idx["title"])]
+    today = TODAY.isoformat()
+    files = sorted(f for f in os.listdir(sdir) if re.match(r"^\d{4}-\d{2}-\d{2}\.enc\.json$", f))
+    prev, prev_date = None, None
+    for f in reversed(files):
+        if f[:10] >= today:
+            continue
+        try:
+            prev = json.loads(decrypt_blob(json.load(open(os.path.join(sdir, f), encoding="utf-8"))))
+            prev_date = f[:10]
+            break
+        except Exception as e:  # パスワード変更後の古い断片など
+            print("  !! snapshot 読めず:", f, e)
+    items = []
+    if prev:
+        for t, rows in tabs.items():
+            if t in prev["tabs"]:
+                items += diff_tab(case_of.get(t, t), prev["tabs"][t], rows)
+    snap = {"date": today, "at": NOW.strftime("%Y-%m-%d %H:%M JST"), "tabs": tabs}
+    with open(os.path.join(sdir, f"{today}.enc.json"), "w", encoding="utf-8") as f:
+        json.dump(encrypt_text(json.dumps(snap, ensure_ascii=False, separators=(",", ":"))), f, separators=(",", ":"))
+    keep_from = (TODAY - timedelta(days=SNAP_KEEP_DAYS)).isoformat()
+    for f in files:
+        if f[:10] < keep_from:
+            os.remove(os.path.join(sdir, f))
+    # 件数だけの要約（平文・公開リポに置いてよい情報のみ）→ workflow が Issue 通知に使う
+    counts = {}
+    for it in items:
+        counts.setdefault(it["case"], {"row": 0, "link": 0, "pack": 0, "rename": 0})[it["kind"]] += 1
+    with open(os.path.join(sdir, "watch_summary.txt"), "w", encoding="utf-8") as f:
+        for case, cn in counts.items():
+            if cn["row"] or cn["link"] or cn["pack"]:  # タイトル変更だけなら通知しない
+                f.write(f"{case}: 行消失{cn['row']}・リンク消失{cn['link']}・完パケ消失{cn['pack']}\n")
+    print("OK: snapshot tabs=%d prev=%s loss items=%d" % (len(tabs), prev_date, len(items)))
+    return {"prevDate": prev_date, "at": snap["at"], "items": items,
+            "tabs": [case_of.get(t, t) for t in tabs]}
+
+
 def main():
     basis, kpi = build_kpi()
     sched = build_sched()
     concepts = build_concepts()
     infoma = build_infoma()
+    try:
+        watch = build_snapshot_watch()
+    except Exception as e:  # 監視は付加機能。失敗してもボード更新は止めない
+        print("  !! snapshot/watch failed:", repr(e))
+        watch = {"prevDate": None, "at": None, "items": [], "error": str(e)}
     board = {
         "updated": NOW.strftime("%Y/%m/%d %H:%M") + " 自動更新",
         "year": TODAY.year,
@@ -296,6 +448,7 @@ def main():
         "kpi": kpi,
         "sched": sched,
         "infoma": infoma,
+        "watch": watch,
     }
     js = ("// WEIN スクール横串オーガニック data.js — 自動生成 "
           + NOW.strftime("%Y-%m-%d %H:%M JST") + "\nwindow.BOARD = "
