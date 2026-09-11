@@ -22,7 +22,6 @@ jobs:
           BOARD_PASSWORD: ${{ secrets.BOARD_PASSWORD }}
         run: python scripts/build_data.py
       - name: Notify losses (Issue with counts only)
-        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
